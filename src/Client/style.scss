@@ -1,0 +1,47 @@
+@charset "utf-8";
+
+// FontAwesome
+$fa_font_path: "~@fortawesome/fontawesome-free/webfonts";
+@import '~@fortawesome/fontawesome-free/scss/fontawesome.scss';
+@import '~@fortawesome/fontawesome-free/scss/regular.scss';
+@import '~@fortawesome/fontawesome-free/scss/solid.scss';
+@import '~@fortawesome/fontawesome-free/scss/brands.scss';
+
+// OpenSans
+$FontPathOpenSans: "~open-sans-fonts/open-sans";
+@import '~open-sans-fonts/open-sans';
+$family-primary: 'Open Sans';
+
+// Bulma
+@import "~bulma/bulma";
+@import "~bulma-prefers-dark/bulma-prefers-dark";
+
+html, body {
+  font-family: "Open Sans", serif;
+  font-size: 14px;
+  font-weight: 300;
+}
+
+
+.preview-item {
+    p {
+      font-weight: 700;
+
+      &.subtitle {
+        padding-top: 1rem;
+      }
+    }
+
+    hr {
+        margin-top: -10.5px;
+    }
+
+    .preview-info {
+        opacity: 0.5;
+        font-size: 0.8em;
+    }
+
+    .box {
+        overflow: auto;
+    }
+}
