@@ -26,6 +26,16 @@ module moment =
     [<Emit("moment($0).format('l HH:mm:ss Z')")>]
     let longFormat (datetime:string) : string = jsNative
 
+[<Import("*", from="markdown-it-checkbox")>]
+module markdownitcheckbox =
+    let thing = 5
+
+[<Import("*", from="markdown-it")>]
+module markdownit =
+
+    [<Emit("new markdownit('commonmark').use(markdownitcheckbox).render($0)")>]
+    let render (markdown:string) : string = jsNative
+
 let momentFromNow (datetime:System.DateTime) =
     moment.strFromNow (datetime.ToString("o"))
 
@@ -69,6 +79,14 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
     | Remote(PreviewMsg previews) ->
         { currentModel with Previews = addOnlyNewPreviews currentModel.Previews previews }, Cmd.none
 
+/// Creates a pre with class box
+let preBox options children = pre (upcast ClassName "box"::options) children
+
+/// Places the element on the right in the element on the left with no options
+let inline (^>) a (b:ReactElement) : ReactElement = a [ ] [ b ]
+/// Places the string on the right in the element on the left with no options
+let inline (^>&) a (b:string) : ReactElement = a [ ] [ str b ]
+
 let showPreview preview =
     Column.column
         [
@@ -80,12 +98,16 @@ let showPreview preview =
             | ImageSrc src ->
                 img [ Src src ]
             | PlainText content ->
-                Box.box' [ ] [ str content ]
+                preBox ^>& content
+
+            | Markdown content ->
+                Container.container ^> div [ DangerouslySetInnerHTML { __html = (markdownit.render content) } ] [ ]
+
             | ContentTypeNotImplemented contentType ->
                 Message.message [ Message.Color IsDanger ]
                     [
-                        Message.header [ ] [ str "Content type not supported" ]
-                        Message.body [ ] [ str contentType ]
+                        Message.header ^>& "Content type not supported"
+                        Message.body ^>& contentType
                     ]
 
             p [ ] [ str (Option.defaultValue "" preview.Filename) ]

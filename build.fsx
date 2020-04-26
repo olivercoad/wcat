@@ -11,11 +11,14 @@ open System
 open Fake.Core
 open Fake.DotNet
 open Fake.IO
+open Fake.IO.FileSystemOperators
+open Fake.IO.Globbing.Operators
 
 Target.initEnvironment ()
 
 let serverPath = Path.getFullName "./src/Server"
 let clientPath = Path.getFullName "./src/Client"
+let wcatCliPath = Path.getFullName "./src/wcat"
 let clientDeployPath = Path.combine clientPath "deploy"
 let deployDir = Path.getFullName "./deploy"
 
@@ -34,6 +37,7 @@ let platformTool tool winTool =
 
 let nodeTool = platformTool "node" "node.exe"
 let yarnTool = platformTool "yarn" "yarn.cmd"
+let goTool = platformTool "go" "go.exe"
 
 let runTool cmd args workingDir =
     let arguments = args |> String.split ' ' |> Arguments.OfArgs
@@ -93,12 +97,29 @@ Target.create "Run" (fun _ ->
         do! Async.Sleep 5000
         openBrowser "http://localhost:8084"
     }
+    let gowatcher = async {
+        //install package and watch for changes
+        let goInstall _ =
+            try
+                runTool goTool "install" wcatCliPath
+                Trace.tracefn "Successfully ran go install"
+            with err ->
+                Trace.traceErrorfn "Failed to run go install: %s" err.Message
+
+        !! (wcatCliPath @@ "**/*.go")
+        |> ChangeWatcher.run goInstall
+        |> ignore
+
+        goInstall ()
+    }
 
     let vsCodeSession = Environment.hasEnvironVar "vsCodeSession"
     let safeClientOnly = Environment.hasEnvironVar "safeClientOnly"
+    let skipWcatCLI = Environment.hasEnvironVar "skipWcatCLI"
 
     let tasks =
         [ if not safeClientOnly then yield server
+          if not safeClientOnly && not skipWcatCLI then yield gowatcher
           yield client
           if not vsCodeSession then yield browser ]
 

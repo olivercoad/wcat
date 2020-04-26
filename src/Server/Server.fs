@@ -63,11 +63,16 @@ let readBodyBytes (ctx:HttpContext) = task {
     return memoryStream.ToArray()
 }
 
-let getImageSrc (ctx:HttpContext) contentType = task {
-    let srcFormat = sprintf "data:%s;charset=utf-8;base64" contentType
+let getImageSrc (ctx:HttpContext) mediaType = task {
+    let srcFormat = sprintf "data:%s;charset=utf-8;base64" mediaType
     let! bytes = readBodyBytes ctx
     let imgData = sprintf "%s,%s" srcFormat (Convert.ToBase64String bytes)
     return ImageSrc imgData
+}
+
+let getMarkdown (ctx:HttpContext) = task {
+    let! body = ctx.ReadBodyFromRequestAsync()
+    return Markdown body
 }
 
 let getPlainText (ctx:HttpContext) = task {
@@ -82,17 +87,20 @@ let showthis next (ctx:HttpContext) = task {
         then Some (filenameHeader.Item 0)
         else None
 
-    let contentType = ctx.Request.ContentType
+    let contentType = Net.Mime.ContentType ctx.Request.ContentType
     let now = DateTime.UtcNow
 
     let! content =
-        match contentType with
-        | "image/jpeg" | "image/png" ->
-            getImageSrc ctx contentType
+        match contentType.MediaType with
+        | "image/jpeg" | "image/png" | "image/svg+xml" ->
+            getImageSrc ctx contentType.MediaType
+        | "text/markdown" ->
+            getMarkdown ctx
         | "text/plain" ->
             getPlainText ctx
         | _ ->
-            Task.FromResult (ContentTypeNotImplemented contentType)
+            ctx.SetStatusCode 415
+            Task.FromResult (ContentTypeNotImplemented ctx.Request.ContentType)
 
 
     printfn "Previewing %s as %A" (Option.defaultValue "" filename) (content.GetType())
@@ -105,7 +113,7 @@ let showthis next (ctx:HttpContext) = task {
 
     broadcastPreview preview
 
-    return! json {| ContentType = contentType |} next ctx
+    return! json {| ContentType = sprintf "%A" contentType |} next ctx
 }
 
 let apiRouter = router {

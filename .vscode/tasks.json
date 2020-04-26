@@ -4,6 +4,16 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Install wcat cli",
+            "command": "go install",
+            "options": {
+                "cwd": "${workspaceFolder}/src/wcat"
+            },
+            "type": "shell",
+            "group": "build",
+            "problemMatcher": "$go"
+        },
+        {
             "label": "Build Server",
             "command": "dotnet",
             "args": [ "build" ],

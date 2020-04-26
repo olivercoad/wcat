@@ -6,6 +6,7 @@ let BridgeSocketEndpoint = "/socket/init"
 type PreviewContent =
     | ImageSrc of string
     | PlainText of string
+    | Markdown of string
     | ContentTypeNotImplemented of string
 
 type Preview = {
