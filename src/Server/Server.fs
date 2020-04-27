@@ -13,10 +13,12 @@ open Shared
 open Elmish
 open Elmish.Bridge
 open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.FileProviders
 
 let tryGetEnv = System.Environment.GetEnvironmentVariable >> function null | "" -> None | x -> Some x
 
 let publicPath = Path.GetFullPath "../Client/public"
+let wcatBinariesPath = Path.Combine(publicPath, "clitool")
 
 let port =
     "SERVER_PORT"
@@ -127,6 +129,12 @@ let webApp =
         router { forward "/api" apiRouter }
     ]
 
+let serveWcatBinaries (app:IApplicationBuilder) = //seperate so as to serve unknown file types
+    let options = StaticFileOptions(FileProvider = new PhysicalFileProvider(wcatBinariesPath))
+    options.RequestPath <- PathString "/clitool"
+    options.ServeUnknownFileTypes <- true
+    app.UseStaticFiles options
+
 let app = application {
     url ("http://0.0.0.0:" + port.ToString() + "/")
     use_router webApp
@@ -134,6 +142,7 @@ let app = application {
     use_static publicPath
     use_json_serializer(Thoth.Json.Giraffe.ThothSerializer())
     app_config Giraffe.useWebSockets
+    app_config serveWcatBinaries
     use_gzip
 }
 

@@ -129,22 +129,41 @@ let showAllImages model =
         //   Column.Offset (Screen.All, Column.Is4)]
         (model.Previews |> List.map showPreview)
 
+let helpMessage =
+    Message.message [ Message.Color IsInfo ] [
+        Message.header [ ] [ str "Use the wcat cli tool to send files for preview" ]
+        Message.body [ ] [
+            p ^>& "Download the wcat cli tool"
+            p ^>& "Remember to make it executable (chmod +x wcat) and place it somewhere in PATH if necessary"
+            br [ ]
+            p ^>& "Then use it just like you would use cat: wcat example.jpg"
+            br [ ]
+            p ^>& "Instead of outputting the content inline, it will send the file to the server."
+            p ^>& "The server will broadcast the content to be displayed here in the browser."
+        ]
+    ]
+
+let downloadButtons =
+    let buttons =
+        [ "Windows", "wcat-windows-386.exe", "wcat.exe";
+          "Mac", "wcat-darwin-386", "wcat";
+          "Linux", "wcat-linux-386", "wcat" ;
+          "Arm", "wcat-linux-arm", "wcat";
+          "Bash", "wcat.sh", "wcat.sh" ]
+        |> List.map (fun (os, file, downloadfile) ->
+            let href = (sprintf "/clitool/%s" file)
+            Button.a
+                [ Button.IsLink; Button.Props [ Download downloadfile; Href href ] ]
+                [ str os ])
+
+    Button.list [ Button.List.IsCentered; Button.List.AreMedium; Button.List.Modifiers [  ] ] buttons
+
 let view (model : Model) (dispatch : Msg -> unit) =
     div [ ] [
         showAllImages model
         Column.column [ ] [
-            Message.message [ Message.Color IsInfo ] [
-                Message.header [ ] [ str "Use the wcat cli tool to send files for preview" ]
-                Message.body [ ] [
-                    p [ ] [ str "The wcat cli tool is a simple bash script" ]
-                    a [ Href "/wcat.sh" ] [ str "Download it here" ]
-                    p [ ] [ str "In bash, edit wcat to make sure it has the correct address for the server (eg. http://localhost:8085/api/showthis)" ]
-                    p [ ] [ str "Make it executable (chmod +x wcat) and place it somewhere in PATH" ]
-                    p [ ] [ str "Then use it just like you would use cat: wcat example.jpg" ]
-                    p [ ] [ str "Instead of outputting the content inline, it will send the file to the server."]
-                    p [ ] [ str "The server will broadcast the content to be displayed here in the browser."]
-                ]
-            ]
+            helpMessage
+            downloadButtons
         ]
     ]
 
