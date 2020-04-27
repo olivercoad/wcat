@@ -3,13 +3,35 @@
 wcat is a webapp and cli tool which allows you to send images
 to your browser while navigating a remote machine with ssh.
 
-To run the server in docker and open it in a browser:
+## Setup
 
-```commandline
+```bash
 docker run -d --name wcat -p "8085:8085" olicoad/wcat:latest
 ```
 
-Then run [wcat](src/Client/public/wcat.sh) in bash as if it were `cat` to preview files.
+Download the cli tool.
+
+```bash
+wget http://localhost:8085/clitool/wcat-linux-386 -O ~/bin/wcat
+chmod +x ~/bin/wcat
+```
+
+Make sure that `~/bin` or wherever you downloaded the file to is in `PATH`.
+
+## Usage
+
+It is recommended to use cli tool on the same machine that the server is running.
+If that is a remote machine, you can use [SSH Port Forwarding](https://www.ssh.com/ssh/tunneling/example) to [access the preview in your browser](http://localhost:8085).
+
+```bash
+ssh -L 127.0.0.1:8085:127.0.0.1:8085 example.com
+```
+
+Run `wcat` just like you would use `cat` to preview files.
+
+```bash
+wcat example.jpg
+```
 
 # SAFE Stack
 
