@@ -71,7 +71,7 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "server",
-				Value:   "http://localhost:8086",
+				Value:   "http://localhost:8085",
 				Usage:   "Post previews to `SERVER`",
 				EnvVars: []string{"WCATSERVER"},
 			},
