@@ -11,6 +11,7 @@
             "logging": {
                 "moduleLoad": false
             },
+            "cwd": "${workspaceFolder}/src/Server",
             "stopAtEntry": false,
             "console": "internalConsole",
         },
@@ -19,7 +20,7 @@
             "type": "chrome",
             "request": "launch",
             "preLaunchTask": "Watch Client",
-            "url": "http://localhost:8080",
+            "url": "http://localhost:8084",
             "webRoot": "${workspaceFolder}/src/Client",
             "sourceMaps": true,
             "sourceMapPathOverrides": {
@@ -31,7 +32,7 @@
             "type": "chrome",
             "request": "launch",
             "preLaunchTask": "Watch Client and Server",
-            "url": "http://localhost:8080",
+            "url": "http://localhost:8084",
             "env": {
                 "vsCodeSession":"true"
             },
