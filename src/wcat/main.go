@@ -16,7 +16,7 @@ import (
 )
 
 // PreviewFile posts the file to the wcat server with filename and Content-Type headers.
-func PreviewFile(client *http.Client, filename string) {
+func PreviewFile(client *http.Client, wcatserver string, filename string) {
 	fmt.Print("Preview file ", filename, " ... ")
 
 	f, err := os.Open(filename)
@@ -33,7 +33,7 @@ func PreviewFile(client *http.Client, filename string) {
 		return
 	}
 	f.Seek(0, 0)
-	req, err := http.NewRequest("POST", "http://localhost:8085/api/showthis", f)
+	req, err := http.NewRequest("POST", wcatserver+"/api/showthis", f)
 	if err != nil {
 		fmt.Println(aurora.Red("Error making request"), err)
 		return
@@ -68,12 +68,21 @@ func main() {
 	app := &cli.App{
 		Name:  "wcat",
 		Usage: "Send files to be previewed in a browser",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "server",
+				Value:   "http://localhost:8086",
+				Usage:   "Post previews to `SERVER`",
+				EnvVars: []string{"WCATSERVER"},
+			},
+		},
 		Action: func(c *cli.Context) error {
 			if c.NArg() >= 1 {
 				client := &http.Client{}
+				wcatserver := c.String("server")
 				for i := 0; i < c.NArg(); i++ {
 					filename := c.Args().Get(i)
-					PreviewFile(client, filename)
+					PreviewFile(client, wcatserver, filename)
 				}
 			} else {
 				fmt.Println("No files specified")
