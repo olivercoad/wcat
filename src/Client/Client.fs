@@ -42,6 +42,12 @@ let momentFromNow (datetime:System.DateTime) =
 let momentLongFormat (datetime:System.DateTime) =
     moment.longFormat (datetime.ToString("o"))
 
+[<Emit("window.scrollTo(0, 0)")>]
+let scrollToTop _ : unit = jsNative
+
+[<Emit("window.scrollTo(0, document.body.scrollHeight)")>]
+let scrollToBottom _ : unit = jsNative
+
 type Model = {
     Previews: Preview list
 }
@@ -51,6 +57,7 @@ type Model = {
 
 type Msg =
     | Remote of ClientMsg
+    | ClearPreviews
 
 
 // defines the initial state and initial command (= side-effect) of the application
@@ -78,14 +85,18 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
     match msg with
     | Remote(PreviewMsg previews) ->
         { currentModel with Previews = addOnlyNewPreviews currentModel.Previews previews }, Cmd.none
+    | ClearPreviews ->
+        { currentModel with Previews = [ ] }, Cmd.bridgeSend ServerMsg.ClearPreviews
 
 /// Creates a pre with class box
 let preBox options children = pre (upcast ClassName "box"::options) children
 
 /// Places the element on the right in the element on the left with no options
 let inline (^>) a (b:ReactElement) : ReactElement = a [ ] [ b ]
+let inline (^>>) a (b:ReactElement) : ReactElement = a [ b ]
 /// Places the string on the right in the element on the left with no options
 let inline (^>&) a (b:string) : ReactElement = a [ ] [ str b ]
+let inline (^>>&) a (b:string) : ReactElement = a [ str b ]
 
 let showPreview preview =
     Column.column
@@ -96,12 +107,12 @@ let showPreview preview =
         [
             match preview.Content with
             | ImageSrc src ->
-                img [ Src src ]
+                Box.box' ^> img [ Src src ]
             | PlainText content ->
                 preBox ^>& content
 
             | Markdown content ->
-                Container.container ^> div [ DangerouslySetInnerHTML { __html = (markdownit.render content) } ] [ ]
+                Box.box' ^> Content.content ^> div [ DangerouslySetInnerHTML { __html = (markdownit.render content) } ] [ ]
 
             | ContentTypeNotImplemented contentType ->
                 Message.message [ Message.Color IsDanger ]
@@ -123,11 +134,13 @@ let showPreview preview =
         ]
 
 let showAllImages model =
-    Column.column
-        [ Column.Width (Screen.All, Column.IsFull)
-        ]
-        //   Column.Offset (Screen.All, Column.Is4)]
-        (model.Previews |> List.map showPreview)
+    match model.Previews with
+    | [ ] ->
+        div [ Hidden true ] [ ]
+    | previews ->
+        Column.column
+            [ Column.Width (Screen.All, Column.IsFull) ]
+            (previews |> List.map showPreview)
 
 let helpMessage =
     Message.message [ Message.Color IsInfo ] [
@@ -159,12 +172,42 @@ let downloadButtons =
 
     Button.list [ Button.List.IsCentered; Button.List.AreMedium; Button.List.Modifiers [  ] ] buttons
 
+let navbar dispatch =
+    let navItem onclick children =
+        Navbar.Item.a
+            [ Navbar.Item.Props [ OnClick onclick ] ]
+            children
+
+    Navbar.navbar [ Navbar.IsFixedBottom; ]
+    ^>> Navbar.menu [ ] [
+        Navbar.Start.div [ ] [
+
+        ]
+        Navbar.End.div [ ] [
+            navItem (fun _ -> dispatch ClearPreviews) ^>>& "Clear Previews"
+            navItem scrollToBottom [ p ^>& "Go to Bottom"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronDown ] [ ] ]
+            navItem scrollToTop [ p ^>& "Go to Top"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronUp ] [ ] ]
+        ]
+    ]
+
 let view (model : Model) (dispatch : Msg -> unit) =
     div [ ] [
+        navbar dispatch
+
         showAllImages model
-        Column.column [ ] [
-            helpMessage
-            downloadButtons
+
+        Hero.hero [ Hero.IsFullheightWithNavbar ] [
+            Hero.head [ ]
+            ^>> Column.column [ Column.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Right) ] ]
+            ^>> a [ Href "https://github.com/olivercoad/wcat"; Class "anchor-with-icon" ]
+            ^>> Fa.i [ Fa.Brand.Github; Fa.Size Fa.Fa4x ] [ ]
+
+            Hero.body
+            ^> Column.column [ ] [
+                Heading.h1 [ Heading.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Centered)] ] ^>>& "wcat"
+                helpMessage
+                downloadButtons
+            ]
         ]
     ]
 

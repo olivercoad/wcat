@@ -12,6 +12,8 @@ $FontPathOpenSans: "~open-sans-fonts/open-sans";
 @import '~open-sans-fonts/open-sans';
 $family-primary: 'Open Sans';
 
+$body-background-color: lavender;
+
 // Bulma
 @import "~bulma/bulma";
 @import "~bulma-prefers-dark/bulma-prefers-dark";
@@ -22,6 +24,9 @@ html, body {
   font-weight: 300;
 }
 
+.anchor-with-icon {
+    color: inherit;
+}
 
 .preview-item {
     p {
