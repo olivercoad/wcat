@@ -146,9 +146,10 @@ let helpMessage =
 let downloadButtons =
     let buttons =
         [ "Windows", "wcat-windows-386.exe", "wcat.exe";
-          "Mac", "wcat-darwin-386", "wcat";
-          "Linux", "wcat-linux-386", "wcat" ;
+          "Darwin64", "wcat-darwin-amd64", "wcat";
+          "Linux64", "wcat-linux-amd64", "wcat" ;
           "Arm", "wcat-linux-arm", "wcat";
+          "Arm64", "wcat-linux-arm75", "wcat";
           "Bash", "wcat.sh", "wcat.sh" ]
         |> List.map (fun (os, file, downloadfile) ->
             let href = (sprintf "/clitool/%s" file)
