@@ -12,7 +12,7 @@ docker run -d --name wcat -p "8085:8085" olicoad/wcat:latest
 Download the cli tool.
 
 ```bash
-wget http://localhost:8085/clitool/wcat-linux-386 -O ~/bin/wcat
+wget http://localhost:8085/clitool/wcat-linux-amd64 -O ~/bin/wcat
 chmod +x ~/bin/wcat
 ```
 
