@@ -182,7 +182,7 @@ let navbar dispatch =
     Navbar.navbar [ Navbar.IsFixedBottom; ]
     ^>> Navbar.menu [ ] [
         Navbar.Start.div [ ] [
-
+            Navbar.Item.a [ Navbar.Item.Props [ Href projectGithubLink ] ] ^>>& Version.app
         ]
         Navbar.End.div [ ] [
             navItem (fun _ -> dispatch ClearPreviews) ^>>& "Clear Previews"
@@ -200,7 +200,7 @@ let view (model : Model) (dispatch : Msg -> unit) =
         Hero.hero [ Hero.IsFullheightWithNavbar ] [
             Hero.head [ ]
             ^>> Column.column [ Column.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Right) ] ]
-            ^>> a [ Href "https://github.com/olivercoad/wcat"; Class "anchor-with-icon" ]
+            ^>> a [ Href projectGithubLink; Class "anchor-with-icon" ]
             ^>> Fa.i [ Fa.Brand.Github; Fa.Size Fa.Fa4x ] [ ]
 
             Hero.body

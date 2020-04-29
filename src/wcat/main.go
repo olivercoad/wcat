@@ -89,6 +89,7 @@ func main() {
 			}
 			return nil
 		},
+		Version: version,
 	}
 
 	err := app.Run(os.Args)

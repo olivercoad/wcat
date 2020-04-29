@@ -83,6 +83,11 @@ Target.create "Build" (fun _ ->
        ("let app = \"" + release.NugetVersion + "\"")
         System.Text.Encoding.UTF8
         (Path.combine clientPath "Version.fs")
+    Shell.regexReplaceInFileWithEncoding
+        "var version = \".+\""
+       ("var version = \"" + release.NugetVersion + "\"")
+        System.Text.Encoding.UTF8
+        (Path.combine wcatCliPath "version.go")
     runTool yarnTool "webpack-cli -p" __SOURCE_DIRECTORY__
 )
 

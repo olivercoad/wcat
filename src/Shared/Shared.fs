@@ -2,6 +2,7 @@ module Shared
 open System
 
 let BridgeSocketEndpoint = "/socket/init"
+let projectGithubLink = "https://github.com/olivercoad/wcat"
 
 type PreviewContent =
     | ImageSrc of string
