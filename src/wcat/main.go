@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"image/jpeg"
 	"io"
@@ -19,7 +20,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func resizeImage(f *os.File, maxWidth, maxHeight int) (*io.PipeReader, error) {
+func resizeImage(f io.Reader, maxWidth, maxHeight int) (*io.PipeReader, error) {
 	img, err := jpeg.Decode(f)
 	if err != nil {
 		return nil, err
@@ -41,26 +42,22 @@ func resizeImage(f *os.File, maxWidth, maxHeight int) (*io.PipeReader, error) {
 }
 
 // PreviewFile posts the file to the wcat server with filename and Content-Type headers.
-func PreviewFile(client *http.Client, wcatserver string, filename string, maxwidth, maxheight int) {
-	fmt.Print("Preview file ", filename, " ... ")
+func PreviewFile(client *http.Client, wcatserver string, filename string, input io.ReadSeeker, maxwidth, maxheight int) {
 
-	f, err := os.Open(filename)
-	if err != nil {
-		fmt.Println(aurora.Red(err))
-		return
-	}
-	defer f.Close()
-
-	contentType, err := mimetype.DetectReader(f)
+	contentType, err := mimetype.DetectReader(input)
 	extension := strings.ToLower(filepath.Ext(filename))
 	if err != nil {
 		fmt.Println(aurora.Red(err))
 		return
 	}
-	f.Seek(0, 0)
-	var requestBody io.Reader = f
+	_, err = input.Seek(0, 0)
+	if err != nil {
+		fmt.Println(aurora.Red(err))
+		return
+	}
+	var requestBody io.Reader = input
 	if contentType.Is("image/jpeg") {
-		resizedBodyReader, err := resizeImage(f, maxwidth, maxheight)
+		resizedBodyReader, err := resizeImage(input, maxwidth, maxheight)
 		if err != nil {
 			fmt.Println(aurora.Red(err))
 			return
@@ -102,8 +99,9 @@ func PreviewFile(client *http.Client, wcatserver string, filename string, maxwid
 
 func main() {
 	app := &cli.App{
-		Name:  "wcat",
-		Usage: "Send files to be previewed in a browser",
+		Name:      "wcat",
+		Usage:     "Send FILE(s) to be previewed in a browser.",
+		UsageText: "wcat [OPTIONS] ...  [FILE] ...\n\nWith no FILE(s), read from standard input.",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "server",
@@ -125,17 +123,36 @@ func main() {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			client := &http.Client{}
+			wcatserver := c.String("server")
+			maxwidth := c.Int("maxwidth")
+			maxheight := c.Int("maxheight")
 			if c.NArg() >= 1 {
-				client := &http.Client{}
-				wcatserver := c.String("server")
-				maxwidth := c.Int("maxwidth")
-				maxheight := c.Int("maxheight")
 				for i := 0; i < c.NArg(); i++ {
 					filename := c.Args().Get(i)
-					PreviewFile(client, wcatserver, filename, maxwidth, maxheight)
+					f, err := os.Open(filename)
+
+					if err != nil {
+						fmt.Println(aurora.Red(err))
+					} else {
+						defer f.Close()
+						fmt.Print("Preview file ", filename, " ... ")
+						PreviewFile(client, wcatserver, filename, f, maxwidth, maxheight)
+					}
 				}
 			} else {
-				fmt.Println("No files specified")
+				fmt.Print("Previewing from standard input... ")
+
+				// must read into memory for seeking to 0 after detecting mimetype
+				input, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					fmt.Println(aurora.Red(err))
+				} else {
+					reader := bytes.NewReader(input)
+					filename := "stdin"
+					PreviewFile(client, wcatserver, filename, reader, maxwidth, maxheight)
+				}
+
 			}
 			return nil
 		},
