@@ -31,7 +31,10 @@ let latestPreviews = Collections.Concurrent.ConcurrentQueue<Preview>()
 /// Elmish init function with a channel for sending client messages
 /// Returns a new state and commands
 let init clientDispatch () =
-    clientDispatch <| PreviewMsg (List.ofSeq latestPreviews)
+    for preview in latestPreviews do
+        clientDispatch <| PreviewMsg { preview with Content = LoadingPreviewContent }
+    for preview in latestPreviews do
+        clientDispatch <| PreviewMsg preview
     (), Cmd.none
 
 /// Elmish update function with a channel for sending client messages
@@ -53,7 +56,7 @@ let bridge =
 
 
 let broadcastPreview preview =
-    hub.BroadcastClient (PreviewMsg [preview])
+    hub.BroadcastClient (PreviewMsg preview)
     while latestPreviews.Count > previewHistory do
         latestPreviews.TryDequeue () |> ignore
     latestPreviews.Enqueue preview
@@ -92,6 +95,19 @@ let showthis next (ctx:HttpContext) = task {
     let contentType = Net.Mime.ContentType ctx.Request.ContentType
     let now = DateTime.UtcNow
 
+    printfn "Broadcasting %s as Loading" (Option.defaultValue "" filename)
+
+    let previewLoading = {
+        Filename = filename
+        Time = now
+        Content = LoadingPreviewContent
+        Id = Guid.NewGuid ()
+    }
+
+    broadcastPreview previewLoading
+
+    //Ideally would catch and broadcast errors if the request dies while processing body
+
     let! content =
         match contentType.MediaType with
         | "image/jpeg" | "image/png" | "image/svg+xml" ->
@@ -106,12 +122,7 @@ let showthis next (ctx:HttpContext) = task {
 
 
     printfn "Previewing %s as %A" (Option.defaultValue "" filename) (content.GetType())
-    let preview = {
-        Filename = filename
-        Time = now
-        Content = content
-        Id = Guid.NewGuid ()
-    }
+    let preview = { previewLoading with Content = content }
 
     broadcastPreview preview
 

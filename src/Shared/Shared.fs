@@ -8,6 +8,7 @@ type PreviewContent =
     | PlainText of string
     | Markdown of string
     | ContentTypeNotImplemented of string
+    | LoadingPreviewContent
 
 type Preview = {
     Filename: string option
@@ -23,4 +24,4 @@ type ServerMsg =
 
 /// A type that specifies the messages sent to the client from the server on Elmish.Bridge
 type ClientMsg =
-    | PreviewMsg of Preview list
+    | PreviewMsg of Preview

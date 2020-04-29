@@ -49,7 +49,7 @@ let scrollToTop _ : unit = jsNative
 let scrollToBottom _ : unit = jsNative
 
 type Model = {
-    Previews: Preview list
+    Previews: Map<System.Guid, Preview>
 }
 
 // The Msg type defines what events/actions can occur while the application is running
@@ -59,34 +59,24 @@ type Msg =
     | Remote of ClientMsg
     | ClearPreviews
 
-
 // defines the initial state and initial command (= side-effect) of the application
 let init () : Model * Cmd<Msg> =
-    { Previews = [] }, Cmd.none
+    { Previews = Map.empty }, Cmd.none
 
-let addOnlyNewPreviews currentPreviews updatePreviews =
-    match currentPreviews with
-    | [] ->
-        //updatePreviews are given as oldest to newest, but currentPreviews is newest to oldest
-        List.rev updatePreviews
-    | latestPreview::_ ->
-        let newPreviews =
-            updatePreviews
-            |> List.rev
-            |> List.takeWhile (fun p -> p.Id <> latestPreview.Id)
-        newPreviews @ currentPreviews
-
-
+let addPreview model preview =
+    match preview.Content, model.Previews.ContainsKey preview.Id with
+    | LoadingPreviewContent, true -> model
+    | _ -> { model with Previews = model.Previews.Add(preview.Id, preview) }
 
 // The update function computes the next state of the application based on the current state and the incoming events/messages
 // It can also run side-effects (encoded as commands) like calling the server via Http.
 // these commands in turn, can dispatch messages to which the update function will react.
 let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
     match msg with
-    | Remote(PreviewMsg previews) ->
-        { currentModel with Previews = addOnlyNewPreviews currentModel.Previews previews }, Cmd.none
+    | Remote(PreviewMsg preview) ->
+        addPreview currentModel preview, Cmd.none
     | ClearPreviews ->
-        { currentModel with Previews = [ ] }, Cmd.bridgeSend ServerMsg.ClearPreviews
+        { currentModel with Previews = Map.empty }, Cmd.bridgeSend ServerMsg.ClearPreviews
 
 /// Creates a pre with class box
 let preBox options children = pre (upcast ClassName "box"::options) children
@@ -121,6 +111,9 @@ let showPreview preview =
                         Message.body ^>& contentType
                     ]
 
+            | LoadingPreviewContent ->
+                Icon.icon ^> Fa.i [ Fa.Solid.Spinner; Fa.Spin ] [ ]
+
             p [ ] [ str (Option.defaultValue "" preview.Filename) ]
             Columns.columns [ Columns.CustomClass "preview-info" ] [
                 Column.column [ ] [
@@ -134,13 +127,21 @@ let showPreview preview =
         ]
 
 let showAllImages model =
-    match model.Previews with
-    | [ ] ->
+    if model.Previews.IsEmpty
+    then
         div [ Hidden true ] [ ]
-    | previews ->
+    else
+        let previews =
+            model.Previews
+            |> Map.toList
+            |> List.unzip
+            |> snd
+            |> List.sortByDescending (fun p -> p.Time)
+            |> List.map showPreview
+
         Column.column
             [ Column.Width (Screen.All, Column.IsFull) ]
-            (previews |> List.map showPreview)
+            previews
 
 let helpMessage =
     Message.message [ Message.Color IsInfo ] [
