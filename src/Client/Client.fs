@@ -88,6 +88,9 @@ let inline (^>>) a (b:ReactElement) : ReactElement = a [ b ]
 let inline (^>&) a (b:string) : ReactElement = a [ ] [ str b ]
 let inline (^>>&) a (b:string) : ReactElement = a [ str b ]
 
+let withLineBreaks (content:string) =
+    content.Replace("\r", "\n")
+
 let showPreview preview =
     Column.column
         [
@@ -99,7 +102,7 @@ let showPreview preview =
             | ImageSrc src ->
                 Box.box' ^> img [ Src src ]
             | PlainText content ->
-                preBox ^>& content
+                preBox ^>& (withLineBreaks content)
 
             | Markdown content ->
                 Box.box' ^> Content.content ^> div [ DangerouslySetInnerHTML { __html = (markdownit.render content) } ] [ ]
