@@ -10,6 +10,7 @@ docker run -d --name wcat -p "8085:8085" olicoad/wcat:latest
 ```
 
 Download the cli tool.
+For example, on linux:
 
 ```bash
 wget http://localhost:8085/clitool/wcat-linux-amd64 -O ~/bin/wcat
@@ -20,22 +21,33 @@ Make sure that `~/bin` or wherever you downloaded the file to is in `PATH`.
 
 ## Usage
 
-It is recommended to use cli tool on the same machine that the server is running.
-If that is a remote machine, you can use [SSH Port Forwarding](https://www.ssh.com/ssh/tunneling/example) to [access the preview in your browser](http://localhost:8085).
-
-```bash
-ssh -L 127.0.0.1:8085:127.0.0.1:8085 example.com
-```
-
 Run `wcat` just like you would use `cat` to preview files.
 
 ```bash
 wcat example.jpg
 ```
 
-# SAFE Stack
+### Usage on a remote machine
+It is recommended to use cli tool on the same machine that the server is running.
+You can use [SSH Port Forwarding](https://www.ssh.com/ssh/tunneling/example) to [access the preview in your browser](http://localhost:8085).
+
+```bash
+ssh -L 127.0.0.1:8085:127.0.0.1:8085 example.com
+```
+
+Alternatively, if you don't have docker on the remote machine,
+you can run the server on your local machine and reverse port forward
+so that the cli tool on the remote machine can access the server.
+
+```bash
+ssh -R 127.0.0.1:8085:127.0.0.1:8085 example.com
+```
+
+# Development
 
 This project is build on the [SAFE Stack](https://safe-stack.github.io/). It was created using the dotnet [SAFE Template](https://safe-stack.github.io/docs/template-overview/). If you want to learn more about the template why not start with the [quick start](https://safe-stack.github.io/docs/quickstart/) guide?
+
+The cli tool is build with go.
 
 ## Install pre-requisites
 
@@ -47,17 +59,24 @@ You'll need to install the following pre-requisites in order to build SAFE appli
 * [Node LTS](https://nodejs.org/en/download/) installed for the front end components.
 * If you're running on OSX or Linux, you'll also need to install [Mono](https://www.mono-project.com/docs/getting-started/install/).
 
+You'll also need to install [go](https://golang.org/) in order to build the cli tool.
+
 ## Work with the application
 
-To concurrently run the server and the client components in watch mode use the following command:
+Fake is used to concurrently watch all components of wcat.
+It will concurrently run the server and frontend in watch mode and `go install` the cli tool whenever there are changes:
 
 ```bash
 fake build -t Run
 ```
 
 
-You can use the included `Dockerfile` and `build.fsx` script to deploy your application as Docker container. You can find more regarding this topic in the [official template documentation](https://safe-stack.github.io/docs/template-docker/).
 
+You can use the included `Dockerfile` and `build.fsx` script to deploy your application as Docker container.
+
+```bash
+fake build -t Docker
+```
 
 ## SAFE Stack Documentation
 
