@@ -32,8 +32,6 @@ let latestPreviews = Collections.Concurrent.ConcurrentQueue<Preview>()
 /// Returns a new state and commands
 let init clientDispatch () =
     for preview in latestPreviews do
-        clientDispatch <| PreviewMsg { preview with Content = LoadingPreviewContent }
-    for preview in latestPreviews do
         clientDispatch <| PreviewMsg preview
     (), Cmd.none
 
@@ -114,7 +112,7 @@ let showthis next (ctx:HttpContext) = task {
             getImageSrc ctx contentType.MediaType
         | "text/markdown" ->
             getMarkdown ctx
-        | "text/plain" ->
+        | "text/plain" | "text/csv" ->
             getPlainText ctx
         | _ ->
             ctx.SetStatusCode 415
