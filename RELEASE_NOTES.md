@@ -1,3 +1,7 @@
+### 0.2.1 - 2020-05-03
+* Add support for csv
+* Fix sometimes not showing newlines
+
 ### 0.2.0 - 2020-04-30
 * Improved ui
 * Fix file for darwin build
