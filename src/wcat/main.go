@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"image"
 	"image/jpeg"
+	"image/png"
 	"io"
 	"io/ioutil"
 	"log"
@@ -20,11 +23,21 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func resizeImage(f io.Reader, maxWidth, maxHeight int) (*io.PipeReader, error) {
-	img, err := jpeg.Decode(f)
-	if err != nil {
-		return nil, err
+func isResizeImage(contentType *mimetype.MIME) bool {
+	return contentType.Is("image/jpeg") || contentType.Is("image/png")
+}
+
+func readImage(f io.Reader, contentType *mimetype.MIME) (image.Image, error) {
+	if contentType.Is("image/jpeg") {
+		return jpeg.Decode(f)
+	} else if contentType.Is("image/png") {
+		return png.Decode(f)
+	} else {
+		return nil, errors.New(fmt.Sprint("Resizing not supported for ", contentType.String()))
 	}
+}
+
+func resizeImage(img image.Image, maxWidth, maxHeight int) *io.PipeReader {
 	if maxWidth <= 0 {
 		maxWidth = math.MaxInt32
 	}
@@ -38,7 +51,7 @@ func resizeImage(f io.Reader, maxWidth, maxHeight int) (*io.PipeReader, error) {
 		defer outw.Close()
 		jpeg.Encode(outw, resized, nil)
 	}()
-	return outr, nil
+	return outr
 }
 
 // PreviewFile posts the file to the wcat server with filename and Content-Type headers.
@@ -56,12 +69,13 @@ func PreviewFile(client *http.Client, wcatserver string, filename string, input 
 		return
 	}
 	var requestBody io.Reader = input
-	if contentType.Is("image/jpeg") {
-		resizedBodyReader, err := resizeImage(input, maxwidth, maxheight)
+	if isResizeImage(contentType) {
+		img, err := readImage(input, contentType)
 		if err != nil {
 			fmt.Println(aurora.Red(err))
 			return
 		}
+		resizedBodyReader := resizeImage(img, maxwidth, maxheight)
 		defer resizedBodyReader.Close()
 		requestBody = resizedBodyReader
 	}
