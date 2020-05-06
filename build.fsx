@@ -41,7 +41,7 @@ let goTool = platformTool "go" "go.exe"
 let gitTool = platformTool "git" "git.exe"
 
 let runTool cmd args workingDir =
-    let arguments = args |> String.split ' ' |> Arguments.OfArgs
+    let arguments = args |> Arguments.OfArgs
     Command.RawCommand (cmd, arguments)
     |> CreateProcess.fromCommand
     |> CreateProcess.withWorkingDirectory workingDir
@@ -71,10 +71,10 @@ Target.create "Clean" (fun _ ->
 
 Target.create "InstallClient" (fun _ ->
     printfn "Node version:"
-    runTool nodeTool "--version" __SOURCE_DIRECTORY__
+    runTool nodeTool [ "--version" ] __SOURCE_DIRECTORY__
     printfn "Yarn version:"
-    runTool yarnTool "--version" __SOURCE_DIRECTORY__
-    runTool yarnTool "install --frozen-lockfile" __SOURCE_DIRECTORY__
+    runTool yarnTool [ "--version" ] __SOURCE_DIRECTORY__
+    runTool yarnTool [ "install"; "--frozen-lockfile" ] __SOURCE_DIRECTORY__
 )
 
 Target.create "Build" (fun _ ->
@@ -89,7 +89,7 @@ Target.create "Build" (fun _ ->
        ("var version = \"" + release.NugetVersion + "\"")
         System.Text.Encoding.UTF8
         (Path.combine wcatCliPath "version.go")
-    runTool yarnTool "webpack-cli -p" __SOURCE_DIRECTORY__
+    runTool yarnTool [ "webpack-cli"; "-p" ] __SOURCE_DIRECTORY__
 )
 
 Target.create "Run" (fun _ ->
@@ -97,7 +97,7 @@ Target.create "Run" (fun _ ->
         runDotNet "watch run" serverPath
     }
     let client = async {
-        runTool yarnTool "webpack-dev-server" __SOURCE_DIRECTORY__
+        runTool yarnTool [ "webpack-dev-server" ] __SOURCE_DIRECTORY__
     }
     let browser = async {
         do! Async.Sleep 5000
@@ -107,7 +107,7 @@ Target.create "Run" (fun _ ->
         //install package and watch for changes
         let goInstall _ =
             try
-                runTool goTool "install" wcatCliPath
+                runTool goTool [ "install" ] wcatCliPath
                 Trace.tracefn "Successfully ran go install"
             with err ->
                 Trace.traceErrorfn "Failed to run go install: %s" err.Message
@@ -136,34 +136,34 @@ Target.create "Run" (fun _ ->
 )
 
 let buildDocker tag =
-    let args = sprintf "build -t %s ." tag
+    let args = [ "build"; "-t"; tag; "." ]
     runTool "docker" args __SOURCE_DIRECTORY__
 
 let tagDocker srcImage targetImage =
-    let args = sprintf "image tag %s %s" srcImage targetImage
+    let args = [ "image"; "tag"; srcImage; targetImage ]
     runTool "docker" args __SOURCE_DIRECTORY__
     Trace.tracefn "Tagged docker image %s as %s" srcImage targetImage
 
 let pushDocker tag =
     use trace = Trace.traceTask "docker push" (sprintf "Push docker image %s" tag)
-    let args = sprintf "push %s" tag
+    let args = [ "push"; tag ]
     runTool "docker" args __SOURCE_DIRECTORY__
     trace.MarkSuccess()
 
 let gitCommitRelease message =
-    runTool gitTool "add RELEASE_NOTES.md src/Client/Version.fs src/wcat/version.go" __SOURCE_DIRECTORY__
+    runTool gitTool [ "add"; "RELEASE_NOTES.md"; "src/Client/Version.fs"; "src/wcat/version.go" ] __SOURCE_DIRECTORY__
     Trace.tracefn "Git added release files"
-    runTool gitTool (sprintf """commit -m "%s" """ message) __SOURCE_DIRECTORY__
+    runTool gitTool [ "commit"; "-m"; message ] __SOURCE_DIRECTORY__
     Trace.tracefn "Created git commit: %s" message
 
 let gitTag tag =
-    let args = sprintf "tag -a %s -m %s" tag tag
+    let args = [ "tag"; "-a"; tag; "-m"; tag ]
     runTool gitTool args __SOURCE_DIRECTORY__
     Trace.tracefn "Created git tag: %s" tag
 
 let gitPush _ =
     use trace = Trace.traceTask "git push" "Push commit and tag with git"
-    let args = sprintf "push --follow-tags"
+    let args = [ "push"; "--follow-tags" ]
     runTool gitTool args __SOURCE_DIRECTORY__
     trace.MarkSuccess()
 
