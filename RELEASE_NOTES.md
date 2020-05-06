@@ -1,3 +1,6 @@
+### 0.2.2 - 2020-05-06
+* Support resizing jpg and png images
+
 ### 0.2.1 - 2020-05-03
 * Add support for csv
 * Fix sometimes not showing newlines
