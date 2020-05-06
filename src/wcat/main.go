@@ -107,8 +107,8 @@ func PreviewFile(client *http.Client, wcatserver string, filename string, input 
 		fmt.Println(aurora.Cyan(resp.Status))
 	} else {
 		fmt.Println(aurora.Red(resp.Status))
+		fmt.Printf("%s\n", body)
 	}
-	fmt.Printf("%s\n", body)
 }
 
 func main() {
