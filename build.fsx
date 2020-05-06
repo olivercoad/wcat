@@ -38,6 +38,7 @@ let platformTool tool winTool =
 let nodeTool = platformTool "node" "node.exe"
 let yarnTool = platformTool "yarn" "yarn.cmd"
 let goTool = platformTool "go" "go.exe"
+let gitTool = platformTool "git" "git.exe"
 
 let runTool cmd args workingDir =
     let arguments = args |> String.split ' ' |> Arguments.OfArgs
@@ -138,6 +139,34 @@ let buildDocker tag =
     let args = sprintf "build -t %s ." tag
     runTool "docker" args __SOURCE_DIRECTORY__
 
+let tagDocker srcImage targetImage =
+    let args = sprintf "image tag %s %s" srcImage targetImage
+    runTool "docker" args __SOURCE_DIRECTORY__
+    Trace.tracefn "Tagged docker image %s as %s" srcImage targetImage
+
+let pushDocker tag =
+    use trace = Trace.traceTask "docker push" (sprintf "Push docker image %s" tag)
+    let args = sprintf "push %s" tag
+    runTool "docker" args __SOURCE_DIRECTORY__
+    trace.MarkSuccess()
+
+let gitCommitRelease message =
+    runTool gitTool "add RELEASE_NOTES.md src/Client/Version.fs src/wcat/version.go" __SOURCE_DIRECTORY__
+    Trace.tracefn "Git added release files"
+    runTool gitTool (sprintf """commit -m "%s" """ message) __SOURCE_DIRECTORY__
+    Trace.tracefn "Created git commit: %s" message
+
+let gitTag tag =
+    let args = sprintf "tag -a %s -m %s" tag tag
+    runTool gitTool args __SOURCE_DIRECTORY__
+    Trace.tracefn "Created git tag: %s" tag
+
+let gitPush _ =
+    use trace = Trace.traceTask "git push" "Push commit and tag with git"
+    let args = sprintf "push --follow-tags"
+    runTool gitTool args __SOURCE_DIRECTORY__
+    trace.MarkSuccess()
+
 Target.create "Bundle" (fun _ ->
     let serverDir = Path.combine deployDir "Server"
     let clientDir = Path.combine deployDir "Client"
@@ -157,7 +186,20 @@ Target.create "Docker" (fun _ ->
     buildDocker dockerFullName
 )
 
+Target.create "Release" (fun _ ->
+    let tag = sprintf "v%s" release.NugetVersion
+    let commitMessage = sprintf "Release %s" release.NugetVersion
+    let dockerLatestTag = sprintf "%s:latest" dockerFullName
+    let dockerVersionTag = sprintf "%s:%s" dockerFullName tag
 
+    tagDocker dockerLatestTag dockerVersionTag
+    pushDocker dockerVersionTag
+    pushDocker dockerLatestTag
+
+    gitCommitRelease commitMessage
+    gitTag tag
+    gitPush()
+)
 
 
 
@@ -169,7 +211,7 @@ open Fake.Core.TargetOperators
     ==> "Build"
     ==> "Bundle"
     ==> "Docker"
-
+    ==> "Release"
 
 "Clean"
     ==> "InstallClient"
