@@ -1,3 +1,6 @@
+### 0.2.3 - 2020-05-21
+* Auto update the "2 minutes ago" message each minute
+
 ### 0.2.2 - 2020-05-06
 * Support resizing jpg and png images
 
