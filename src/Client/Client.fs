@@ -4,6 +4,7 @@ open Elmish
 open Elmish.React
 open Elmish.Bridge
 open Fable.Core
+open Browser
 open Fable.FontAwesome
 open Fable.FontAwesome.Free
 open Fable.React
@@ -20,8 +21,8 @@ open Shared
 
 [<Import("*", from="moment")>]
 module moment =
-    [<Emit("moment($0).fromNow()")>]
-    let strFromNow (datetime:string) : string = jsNative
+    [<Emit("moment($0).from($1)")>]
+    let strFrom (datetime:string, fromdatetime:string) : string = jsNative
 
     [<Emit("moment($0).format('l HH:mm:ss Z')")>]
     let longFormat (datetime:string) : string = jsNative
@@ -36,8 +37,8 @@ module markdownit =
     [<Emit("new markdownit('commonmark').use(markdownitcheckbox).render($0)")>]
     let render (markdown:string) : string = jsNative
 
-let momentFromNow (datetime:System.DateTime) =
-    moment.strFromNow (datetime.ToString("o"))
+let momentFrom (datetime:System.DateTime) (fromdatetime:System.DateTime) =
+    moment.strFrom (datetime.ToString("o"), fromdatetime.ToString("o"))
 
 let momentLongFormat (datetime:System.DateTime) =
     moment.longFormat (datetime.ToString("o"))
@@ -49,6 +50,7 @@ let scrollToTop _ : unit = jsNative
 let scrollToBottom _ : unit = jsNative
 
 type Model = {
+    CurrentTime: System.DateTime
     Previews: Map<System.Guid, Preview>
 }
 
@@ -57,16 +59,24 @@ type Model = {
 
 type Msg =
     | Remote of ClientMsg
+    | Tick of System.DateTime
     | ClearPreviews
+
+let timer initial = // used to update "2 minutes ago" momentjs message
+    let sub dispatch =
+        window.setInterval(fun _ ->
+            dispatch (Tick System.DateTime.Now)
+        , 60000) |> ignore //tick once every minute
+    Cmd.ofSub sub
 
 // defines the initial state and initial command (= side-effect) of the application
 let init () : Model * Cmd<Msg> =
-    { Previews = Map.empty }, Cmd.none
+    { Previews = Map.empty; CurrentTime = System.DateTime.Now }, Cmd.none
 
 let addPreview model preview =
     match preview.Content, model.Previews.ContainsKey preview.Id with
     | LoadingPreviewContent, true -> model
-    | _ -> { model with Previews = model.Previews.Add(preview.Id, preview) }
+    | _ -> { model with Previews = model.Previews.Add(preview.Id, preview); CurrentTime = System.DateTime.Now }
 
 // The update function computes the next state of the application based on the current state and the incoming events/messages
 // It can also run side-effects (encoded as commands) like calling the server via Http.
@@ -77,6 +87,8 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
         addPreview currentModel preview, Cmd.none
     | ClearPreviews ->
         { currentModel with Previews = Map.empty }, Cmd.bridgeSend ServerMsg.ClearPreviews
+    | Tick now ->
+        { currentModel with CurrentTime = now }, Cmd.none
 
 /// Creates a pre with class box
 let preBox options children = pre (upcast ClassName "box"::options) children
@@ -91,7 +103,7 @@ let inline (^>>&) a (b:string) : ReactElement = a [ str b ]
 let withLineBreaks (content:string) =
     content.Replace("\r", "\n")
 
-let showPreview preview =
+let showPreview currentTime preview =
     Column.column
         [
             Column.Width (Screen.All, Column.IsFull)
@@ -120,7 +132,7 @@ let showPreview preview =
             p [ ] [ str (Option.defaultValue "" preview.Filename) ]
             Columns.columns [ Columns.CustomClass "preview-info" ] [
                 Column.column [ ] [
-                    p [ ] [ str (momentFromNow preview.Time)]
+                    p [ ] [ str (momentFrom preview.Time currentTime)]
                 ]
                 Column.column [ Column.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Right) ] ] [
                     p [ ] [ str (momentLongFormat preview.Time) ]
@@ -140,7 +152,7 @@ let showAllImages model =
             |> List.unzip
             |> snd
             |> List.sortByDescending (fun p -> p.Time)
-            |> List.map showPreview
+            |> List.map (showPreview model.CurrentTime)
 
         Column.column
             [ Column.Width (Screen.All, Column.IsFull) ]
@@ -227,6 +239,7 @@ Program.mkProgram init update view
         Bridge.endpoint BridgeSocketEndpoint
         |> Bridge.withMapping Remote
     )
+|> Program.withSubscription timer
 #if DEBUG
 |> Program.withConsoleTrace
 #endif
