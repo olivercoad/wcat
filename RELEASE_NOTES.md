@@ -1,3 +1,6 @@
+### 0.2.4 - 2020-06-08
+* Update dependencies
+
 ### 0.2.3 - 2020-05-21
 * Auto update the "2 minutes ago" message each minute
 
