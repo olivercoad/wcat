@@ -108,6 +108,7 @@ let showPreview currentTime preview =
         [
             Column.Width (Screen.All, Column.IsFull)
             Column.CustomClass "preview-item"
+            Column.Props [ Key (string preview.Id) ]
         ]
         [
             match preview.Content with
@@ -118,6 +119,9 @@ let showPreview currentTime preview =
 
             | Markdown content ->
                 Box.box' ^> Content.content ^> div [ DangerouslySetInnerHTML { __html = (markdownit.render content) } ] [ ]
+
+            | AudioSrc src ->
+                audio [ Src src; Controls true; ] [ p ^>& (Option.defaultValue "Audio" preview.Filename) ]
 
             | ContentTypeNotImplemented contentType ->
                 Message.message [ Message.Color IsDanger ]

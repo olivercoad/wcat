@@ -66,11 +66,11 @@ let readBodyBytes (ctx:HttpContext) = task {
     return memoryStream.ToArray()
 }
 
-let getImageSrc (ctx:HttpContext) mediaType = task {
+let getBase64Src (ctx:HttpContext) mediaType previewF = task {
     let srcFormat = sprintf "data:%s;charset=utf-8;base64" mediaType
     let! bytes = readBodyBytes ctx
-    let imgData = sprintf "%s,%s" srcFormat (Convert.ToBase64String bytes)
-    return ImageSrc imgData
+    let srcData = sprintf "%s,%s" srcFormat (Convert.ToBase64String bytes)
+    return previewF srcData
 }
 
 let getMarkdown (ctx:HttpContext) = task {
@@ -109,7 +109,9 @@ let showthis next (ctx:HttpContext) = task {
     let! content =
         match contentType.MediaType with
         | "image/jpeg" | "image/png" | "image/svg+xml" ->
-            getImageSrc ctx contentType.MediaType
+            (getBase64Src ctx contentType.MediaType ImageSrc)
+        | "audio/x-m4a" | "audio/mpeg" | "audio/flac" | "audio/wav" ->
+            (getBase64Src ctx contentType.MediaType AudioSrc)
         | "text/markdown" ->
             getMarkdown ctx
         | "text/plain" | "text/csv" ->

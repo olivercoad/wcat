@@ -8,6 +8,7 @@ type PreviewContent =
     | ImageSrc of string
     | PlainText of string
     | Markdown of string
+    | AudioSrc of string
     | ContentTypeNotImplemented of string
     | LoadingPreviewContent
 
