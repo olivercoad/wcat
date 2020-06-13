@@ -1,3 +1,6 @@
+### 0.2.5 - 2020-06-14
+* Add support for audio **mp3**, **wav**, **m4a** files
+
 ### 0.2.4 - 2020-06-08
 * Update dependencies
 
