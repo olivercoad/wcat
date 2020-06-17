@@ -8,12 +8,8 @@ HERE = pathlib.Path(__file__).parent
 # The text of the README file
 README = (HERE / "README.md").read_text()
 
-def read(rel_path):
-    with codecs.open(HERE / rel_path, 'r') as fp:
-        return fp.read()
-
 def get_version(rel_path):
-    for line in read(rel_path).splitlines():
+    for line in (HERE / rel_path).read_text('utf-8-sig').splitlines():
         if line.startswith('__version__'):
             delim = '"' if '"' in line else "'"
             return line.split(delim)[1]
