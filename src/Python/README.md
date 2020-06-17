@@ -6,7 +6,7 @@ This is a useful alternative to jupyter for previews on a remote machine.
 
 ## Setup
 
-First, make sure you are running a wcat server https://github.com/olivercoad/wcat/#setup and can access it in your browser.
+First, make sure you are running a [wcat server](https://github.com/olivercoad/wcat/#setup-the-server) and can access it in your browser.
 
 Once you have a wcat server running (on a local or remote machine), install pywcat.
 
