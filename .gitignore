@@ -14,3 +14,8 @@ release.sh
 *.DotSettings.user
 deploy
 .ionide/
+
+*.egg-info
+**/dist/
+**/__pycache__/
+src/Python/build/

@@ -3,11 +3,15 @@
 wcat is a webapp and cli tool which allows you to send images
 to your browser while navigating a remote machine with ssh.
 
-## Setup
+## Setup the server
+
+The easiest way to run the server is using docker:
 
 ```bash
 docker run -d --name wcat -p "8085:8085" olicoad/wcat:latest
 ```
+
+## Setup the cli tool
 
 Download the cli tool.
 For example, on linux:
@@ -42,6 +46,9 @@ so that the cli tool on the remote machine can access the server.
 ```bash
 ssh -R 127.0.0.1:8085:127.0.0.1:8085 example.com
 ```
+
+### Libraries
+The [pywcat](src/Python/README.md) package makes it easy to send previews to wcat from python.
 
 # Development
 

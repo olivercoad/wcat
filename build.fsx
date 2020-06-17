@@ -19,6 +19,7 @@ Target.initEnvironment ()
 let serverPath = Path.getFullName "./src/Server"
 let clientPath = Path.getFullName "./src/Client"
 let wcatCliPath = Path.getFullName "./src/wcat"
+let pywcatPath = Path.getFullName "./src/Python/pywcat"
 let clientDeployPath = Path.combine clientPath "deploy"
 let deployDir = Path.getFullName "./deploy"
 
@@ -78,7 +79,6 @@ Target.create "InstallClient" (fun _ ->
 )
 
 Target.create "Build" (fun _ ->
-    runDotNet "build" serverPath
     Shell.regexReplaceInFileWithEncoding
         "let app = \".+\""
        ("let app = \"" + release.NugetVersion + "\"")
@@ -89,6 +89,13 @@ Target.create "Build" (fun _ ->
        ("var version = \"" + release.NugetVersion + "\"")
         System.Text.Encoding.UTF8
         (Path.combine wcatCliPath "version.go")
+    Shell.regexReplaceInFileWithEncoding
+        "__version__ = \".+\""
+       ("__version__ = \"" + release.NugetVersion + "\"")
+        System.Text.Encoding.UTF8
+        (Path.combine pywcatPath "__init__.py")
+
+    runDotNet "build" serverPath
     runTool yarnTool [ "webpack-cli"; "-p" ] __SOURCE_DIRECTORY__
 )
 
