@@ -193,11 +193,11 @@ Target.create "Release" (fun _ ->
     let dockerVersionTag = sprintf "%s:%s" dockerFullName tag
 
     tagDocker dockerLatestTag dockerVersionTag
-    pushDocker dockerVersionTag
-    pushDocker dockerLatestTag
-
     gitCommitRelease commitMessage
     gitTag tag
+
+    pushDocker dockerVersionTag
+    pushDocker dockerLatestTag
     gitPush()
 )
 
