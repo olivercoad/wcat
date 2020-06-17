@@ -1,3 +1,7 @@
+### 0.3.0 - 2020-06-18
+* Add pywcat python package
+* Add support for **html** files
+
 ### 0.2.5 - 2020-06-14
 * Add support for audio **mp3**, **wav**, **m4a** files
 
