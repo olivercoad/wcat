@@ -7,6 +7,7 @@ let projectGithubLink = "https://github.com/olivercoad/wcat"
 type PreviewContent =
     | ImageSrc of string
     | PlainText of string
+    | IframeSrc of string
     | Markdown of string
     | AudioSrc of string
     | ContentTypeNotImplemented of string

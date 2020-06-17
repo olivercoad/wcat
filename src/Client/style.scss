@@ -53,4 +53,9 @@ html, body {
     audio {
         width: 100%;
     }
+
+    iframe {
+        width: 100%;
+        height: calc(80vh - 45px);
+    }
 }

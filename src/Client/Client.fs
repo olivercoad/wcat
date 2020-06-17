@@ -49,6 +49,12 @@ let scrollToTop _ : unit = jsNative
 [<Emit("window.scrollTo(0, document.body.scrollHeight)")>]
 let scrollToBottom _ : unit = jsNative
 
+type IUtilities =
+    abstract OpenInNewTab : uri:string * title:string -> unit
+
+[<ImportAll("./public/Utils.js")>]
+let utilities:IUtilities = jsNative
+
 type Model = {
     CurrentTime: System.DateTime
     Previews: Map<System.Guid, Preview>
@@ -103,6 +109,20 @@ let inline (^>>&) a (b:string) : ReactElement = a [ str b ]
 let withLineBreaks (content:string) =
     content.Replace("\r", "\n")
 
+let openInNewTabBtn src title text =
+    let winopen src _ =
+        // window.``open``(src) |> ignore
+        utilities.OpenInNewTab (src, Option.defaultValue "wcat preview" title)
+        ()
+
+    // let src = "https://checkface.ml"
+
+    Column.column [ ] [
+        Button.button
+            [ Button.IsLink; Button.OnClick (winopen src) ]
+            [ str text ]
+    ]
+
 let showPreview currentTime preview =
     Column.column
         [
@@ -114,6 +134,7 @@ let showPreview currentTime preview =
             match preview.Content with
             | ImageSrc src ->
                 Box.box' ^> img [ Src src ]
+
             | PlainText content ->
                 preBox ^>& (withLineBreaks content)
 
@@ -122,6 +143,10 @@ let showPreview currentTime preview =
 
             | AudioSrc src ->
                 audio [ Src src; Controls true; ] [ p ^>& (Option.defaultValue "Audio" preview.Filename) ]
+
+            | IframeSrc src ->
+                iframe [ Src src ] [ ]
+                openInNewTabBtn src preview.Filename "Open in new tab"
 
             | ContentTypeNotImplemented contentType ->
                 Message.message [ Message.Color IsDanger ]
