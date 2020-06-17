@@ -158,7 +158,13 @@ let pushDocker tag =
     trace.MarkSuccess()
 
 let gitCommitRelease message =
-    runTool gitTool [ "add"; "RELEASE_NOTES.md"; "src/Client/Version.fs"; "src/wcat/version.go" ] __SOURCE_DIRECTORY__
+    runTool gitTool [
+        "add"
+        "RELEASE_NOTES.md"
+        "src/Client/Version.fs"
+        "src/wcat/version.go"
+        "src/Python/pywcat/__init__.py"
+        ] __SOURCE_DIRECTORY__
     Trace.tracefn "Git added release files"
     runTool gitTool [ "commit"; "-m"; message ] __SOURCE_DIRECTORY__
     Trace.tracefn "Created git commit: %s" message
