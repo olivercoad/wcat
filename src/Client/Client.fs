@@ -37,8 +37,10 @@ module markdownit =
     [<Emit("new markdownit('commonmark').use(markdownitcheckbox).render($0)")>]
     let render (markdown:string) : string = jsNative
 
-let momentFrom (datetime:System.DateTime) (fromdatetime:System.DateTime) =
-    moment.strFrom (datetime.ToString("o"), fromdatetime.ToString("o"))
+let momentFromPast (datetime:System.DateTime) (fromdatetime:System.DateTime) =
+    // datetime should always be in past
+    let toDateTime = if datetime < fromdatetime then datetime else fromdatetime
+    moment.strFrom (toDateTime.ToString("o"), fromdatetime.ToString("o"))
 
 let momentLongFormat (datetime:System.DateTime) =
     moment.longFormat (datetime.ToString("o"))
@@ -161,7 +163,7 @@ let showPreview currentTime preview =
             p [ ] [ str (Option.defaultValue "" preview.Filename) ]
             Columns.columns [ Columns.CustomClass "preview-info" ] [
                 Column.column [ ] [
-                    p [ ] [ str (momentFrom preview.Time currentTime)]
+                    p [ ] [ str (momentFromPast preview.Time currentTime)]
                 ]
                 Column.column [ Column.Modifiers [ Modifier.TextAlignment (Screen.All, TextAlignment.Right) ] ] [
                     p [ ] [ str (momentLongFormat preview.Time) ]
