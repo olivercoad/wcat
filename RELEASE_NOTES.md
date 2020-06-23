@@ -1,3 +1,6 @@
+### 0.3.1 - 2020-06-23
+* Fix #3 moment sometimes being "in a few seconds"
+
 ### 0.3.0 - 2020-06-18
 * Add pywcat python package
 * Add support for **html** files
