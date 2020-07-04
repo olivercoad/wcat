@@ -1,0 +1,42 @@
+name: olivercoad-wcat # you probably want to 'snapcraft register <name>'
+base: core18 # the base snap is the execution environment for this snap
+version: '0.3.1'
+summary: Send previews to your browser from the command line # 79 char elevator pitch
+description: |
+  wcat is a webapp and cli tool which allows you to send previews of files to your
+  browser while navigating a remote machine with ssh.
+  Install this snap on the remote machine.
+
+grade: devel # must be 'stable' to release into candidate/stable channels
+confinement: classic
+
+apps:
+  wcat:
+    command: bin/wcat
+    plugs:
+      - network
+
+  serve-wcat:
+    command: sh -c "cd $SNAP/Server && dotnet Server.dll"
+    plugs:
+      - network
+      - network-bind
+    daemon: simple
+
+parts:
+  cli-tool:
+    source: deploy/Client/public/clitool
+    source-type: local
+    plugin: dump
+    organize:
+      'wcat-linux-amd64': bin/wcat
+    stage:
+      - bin/wcat
+
+  server:
+    source: deploy
+    source-type: local
+    plugin: dump
+    stage-packages:
+      - apt-transport-https
+      - aspnetcore-runtime-3.1
