@@ -20,6 +20,7 @@ let serverPath = Path.getFullName "./src/Server"
 let clientPath = Path.getFullName "./src/Client"
 let wcatCliPath = Path.getFullName "./src/wcat"
 let pywcatPath = Path.getFullName "./src/Python/pywcat"
+let snapPath = Path.getFullName "./snap"
 let clientDeployPath = Path.combine clientPath "deploy"
 let deployDir = Path.getFullName "./deploy"
 
@@ -38,7 +39,6 @@ let platformTool tool winTool =
 
 let nodeTool = platformTool "node" "node.exe"
 let yarnTool = platformTool "yarn" "yarn.cmd"
-let goTool = platformTool "go" "go.exe"
 let gitTool = platformTool "git" "git.exe"
 
 let runTool cmd args workingDir =
@@ -78,28 +78,40 @@ Target.create "InstallClient" (fun _ ->
     runTool yarnTool [ "install"; "--frozen-lockfile" ] __SOURCE_DIRECTORY__
 )
 
-Target.create "Build" (fun _ ->
+Target.create "ReplaceVersions" (fun _ ->
     Shell.regexReplaceInFileWithEncoding
         "let app = \".+\""
        ("let app = \"" + release.NugetVersion + "\"")
         System.Text.Encoding.UTF8
         (Path.combine clientPath "Version.fs")
+
     Shell.regexReplaceInFileWithEncoding
         "var version = \".+\""
        ("var version = \"" + release.NugetVersion + "\"")
         System.Text.Encoding.UTF8
         (Path.combine wcatCliPath "version.go")
+
     Shell.regexReplaceInFileWithEncoding
         "__version__ = \".+\""
        ("__version__ = \"" + release.NugetVersion + "\"")
         System.Text.Encoding.UTF8
         (Path.combine pywcatPath "__init__.py")
 
+    Shell.regexReplaceInFileWithEncoding
+        "version: '.+'"
+       ("version: '" + release.NugetVersion + "'")
+        System.Text.Encoding.UTF8
+        (Path.combine snapPath "snapcraft.yaml")
+)
+
+Target.create "Build" (fun _ ->
     runDotNet "build" serverPath
     runTool yarnTool [ "webpack-cli"; "-p" ] __SOURCE_DIRECTORY__
 )
 
 Target.create "Run" (fun _ ->
+    let goTool = platformTool "go" "go.exe"
+
     let server = async {
         runDotNet "watch run" serverPath
     }
@@ -142,8 +154,8 @@ Target.create "Run" (fun _ ->
     |> ignore
 )
 
-let buildDocker tag =
-    let args = [ "build"; "-t"; tag; "." ]
+let buildDocker tag target =
+    let args = [ "build"; "-t"; tag; "--target"; target; "." ]
     runTool "docker" args __SOURCE_DIRECTORY__
 
 let tagDocker srcImage targetImage =
@@ -196,7 +208,7 @@ let dockerImageName = "wcat"
 let dockerFullName = sprintf "%s/%s" dockerUser dockerImageName
 
 Target.create "Docker" (fun _ ->
-    buildDocker dockerFullName
+    buildDocker dockerFullName "server"
 )
 
 Target.create "Release" (fun _ ->
@@ -221,8 +233,12 @@ open Fake.Core.TargetOperators
 
 "Clean"
     ==> "InstallClient"
+    ==> "ReplaceVersions"
     ==> "Build"
     ==> "Bundle"
+
+
+"ReplaceVersions"
     ==> "Docker"
     ==> "Release"
 
