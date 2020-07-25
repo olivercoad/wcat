@@ -10,6 +10,9 @@ description: |
 grade: stable
 confinement: classic
 
+architectures:
+  - build-on: amd64
+
 apps:
   olivercoad-wcat:
     command: bin/wcat
@@ -26,6 +29,8 @@ parts:
     build-environment:
       # curl doesn't work without this
       - LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libcurl.so.4
+    build-packages:
+      - curl
     override-build: |
       curl -fsSL https://get.docker.com -o get-docker.sh
       sh get-docker.sh
@@ -37,4 +42,4 @@ parts:
       mkdir -p $SNAPCRAFT_PART_INSTALL/bin
       docker cp $id:/bin/wcat $SNAPCRAFT_PART_INSTALL/bin/wcat
     stage-snaps:
-      - dotnet-sdk
+      - dotnet-sdk/3.1/stable
