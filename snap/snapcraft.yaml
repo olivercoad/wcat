@@ -1,42 +1,40 @@
-name: olivercoad-wcat # you probably want to 'snapcraft register <name>'
-base: core18 # the base snap is the execution environment for this snap
+name: olivercoad-wcat
+base: core18
 version: '0.3.1'
-summary: Send previews to your browser from the command line # 79 char elevator pitch
+summary: Send previews to your browser from the command line
 description: |
   wcat is a webapp and cli tool which allows you to send previews of files to your
   browser while navigating a remote machine with ssh.
   Install this snap on the remote machine.
 
-grade: devel # must be 'stable' to release into candidate/stable channels
+grade: stable
 confinement: classic
 
 apps:
-  wcat:
+  olivercoad-wcat:
     command: bin/wcat
-    plugs:
-      - network
 
   serve-wcat:
-    command: sh -c "cd $SNAP/Server && dotnet Server.dll"
-    plugs:
-      - network
-      - network-bind
+    command: sh -c "cd $SNAP/Server && $SNAP/dotnet Server.dll"
     daemon: simple
 
 parts:
-  cli-tool:
-    source: deploy/Client/public/clitool
+  dockerbuild:
+    source: .
     source-type: local
     plugin: dump
-    organize:
-      'wcat-linux-amd64': bin/wcat
-    stage:
-      - bin/wcat
-
-  server:
-    source: deploy
-    source-type: local
-    plugin: dump
-    stage-packages:
-      - apt-transport-https
-      - aspnetcore-runtime-3.1
+    build-environment:
+      # curl doesn't work without this
+      - LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libcurl.so.4
+    override-build: |
+      curl -fsSL https://get.docker.com -o get-docker.sh
+      sh get-docker.sh
+      export DOCKER_BUILDKIT=1
+      docker build -t "wcat_snapcraft" .
+      id=$(docker create wcat_snapcraft)
+      docker cp $id:/Client $SNAPCRAFT_PART_INSTALL
+      docker cp $id:/Server $SNAPCRAFT_PART_INSTALL
+      mkdir -p $SNAPCRAFT_PART_INSTALL/bin
+      docker cp $id:/bin/wcat $SNAPCRAFT_PART_INSTALL/bin/wcat
+    stage-snaps:
+      - dotnet-sdk

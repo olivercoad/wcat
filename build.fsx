@@ -97,11 +97,11 @@ Target.create "ReplaceVersions" (fun _ ->
         System.Text.Encoding.UTF8
         (Path.combine pywcatPath "__init__.py")
 
-    // Shell.regexReplaceInFileWithEncoding
-    //     "version: '.+'"
-    //    ("version: '" + release.NugetVersion + "'")
-    //     System.Text.Encoding.UTF8
-    //     (Path.combine snapPath "snapcraft.yaml")
+    Shell.regexReplaceInFileWithEncoding
+        "version: '.+'"
+       ("version: '" + release.NugetVersion + "'")
+        System.Text.Encoding.UTF8
+        (Path.combine snapPath "snapcraft.yaml")
 )
 
 Target.create "Build" (fun _ ->
@@ -211,15 +211,6 @@ Target.create "Docker" (fun _ ->
     buildDocker dockerFullName "server"
 )
 
-Target.create "BuildSnap" (fun _ ->
-    let snapBuilderTag = "wcat-snapbuilder"
-    let dockerfileTarget = "snapbuilder"
-    buildDocker snapBuilderTag dockerfileTarget
-    let volMount = sprintf "%s:/snapbuilds" deployDir
-    let args = [ "run"; "--rm"; "--name"; snapBuilderTag; "-v"; volMount; snapBuilderTag ]
-    runTool "docker" args __SOURCE_DIRECTORY__
-)
-
 Target.create "Release" (fun _ ->
     let tag = sprintf "v%s" release.NugetVersion
     let commitMessage = sprintf "Release %s" release.NugetVersion
@@ -249,7 +240,6 @@ open Fake.Core.TargetOperators
 
 "ReplaceVersions"
     ==> "Docker"
-    ==> "BuildSnap"
     ==> "Release"
 
 "Clean"
