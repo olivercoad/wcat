@@ -108,7 +108,7 @@ let showthis next (ctx:HttpContext) = task {
 
     let! content =
         match contentType.MediaType with
-        | "image/jpeg" | "image/png" | "image/svg+xml" ->
+        | "image/jpeg" | "image/png" | "image/svg+xml" | "image/webp" ->
             (getBase64Src ctx contentType.MediaType ImageSrc)
         | "text/html" ->
             (getBase64Src ctx contentType.MediaType IframeSrc)

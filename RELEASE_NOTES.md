@@ -1,3 +1,6 @@
+### 0.3.2 - 2020-07-26
+* Add support for **webp** files
+
 ### 0.3.1 - 2020-06-23
 * Fix #3 moment sometimes being "in a few seconds"
 
