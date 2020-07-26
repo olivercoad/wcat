@@ -6,8 +6,6 @@
 #r "Facades/netstandard" // https://github.com/ionide/ionide-vscode-fsharp/issues/839#issuecomment-396296095
 #endif
 
-open System
-
 open Fake.Core
 open Fake.DotNet
 open Fake.IO
@@ -147,21 +145,6 @@ Target.create "Run" (fun _ ->
     |> ignore
 )
 
-let buildDocker tag target =
-    let args = [ "build"; "-t"; tag; "--target"; target; "." ]
-    runTool "docker" args __SOURCE_DIRECTORY__
-
-let tagDocker srcImage targetImage =
-    let args = [ "image"; "tag"; srcImage; targetImage ]
-    runTool "docker" args __SOURCE_DIRECTORY__
-    Trace.tracefn "Tagged docker image %s as %s" srcImage targetImage
-
-let pushDocker tag =
-    use trace = Trace.traceTask "docker push" (sprintf "Push docker image %s" tag)
-    let args = [ "push"; tag ]
-    runTool "docker" args __SOURCE_DIRECTORY__
-    trace.MarkSuccess()
-
 let gitCommitRelease message =
     runTool gitTool [
         "add"
@@ -196,30 +179,15 @@ Target.create "Bundle" (fun _ ->
     Shell.copyDir publicDir clientDeployPath FileFilter.allFiles
 )
 
-let dockerUser = "olicoad"
-let dockerImageName = "wcat"
-let dockerFullName = sprintf "%s/%s" dockerUser dockerImageName
-
-Target.create "Docker" (fun _ ->
-    buildDocker dockerFullName "server"
-)
-
 Target.create "Release" (fun _ ->
     let tag = sprintf "v%s" release.NugetVersion
     let commitMessage = sprintf "Release %s" release.NugetVersion
-    let dockerLatestTag = sprintf "%s:latest" dockerFullName
-    let dockerVersionTag = sprintf "%s:%s" dockerFullName tag
 
-    tagDocker dockerLatestTag dockerVersionTag
     gitCommitRelease commitMessage
     gitTag tag
 
-    pushDocker dockerVersionTag
-    pushDocker dockerLatestTag
     gitPush()
 )
-
-
 
 
 open Fake.Core.TargetOperators
@@ -232,7 +200,6 @@ open Fake.Core.TargetOperators
 
 
 "ReplaceVersions"
-    ==> "Docker"
     ==> "Release"
 
 "Clean"
