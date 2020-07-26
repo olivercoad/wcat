@@ -20,7 +20,6 @@ let serverPath = Path.getFullName "./src/Server"
 let clientPath = Path.getFullName "./src/Client"
 let wcatCliPath = Path.getFullName "./src/wcat"
 let pywcatPath = Path.getFullName "./src/Python/pywcat"
-let snapPath = Path.getFullName "./snap"
 let clientDeployPath = Path.combine clientPath "deploy"
 let deployDir = Path.getFullName "./deploy"
 
@@ -96,12 +95,6 @@ Target.create "ReplaceVersions" (fun _ ->
        ("__version__ = \"" + release.NugetVersion + "\"")
         System.Text.Encoding.UTF8
         (Path.combine pywcatPath "__init__.py")
-
-    Shell.regexReplaceInFileWithEncoding
-        "version: '.+'"
-       ("version: '" + release.NugetVersion + "'")
-        System.Text.Encoding.UTF8
-        (Path.combine snapPath "snapcraft.yaml")
 )
 
 Target.create "Build" (fun _ ->

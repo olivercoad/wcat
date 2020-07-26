@@ -25,4 +25,3 @@ Dockerfile
 .dockerignore
 .gitignore
 .git/
-snap/
