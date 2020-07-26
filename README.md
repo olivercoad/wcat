@@ -1,4 +1,4 @@
-# wcat
+# wcat - web cat
 
 wcat is a webapp and cli tool which allows you to send images
 to your browser while navigating a remote machine with ssh.
@@ -49,6 +49,13 @@ ssh -R 127.0.0.1:8085:127.0.0.1:8085 example.com
 
 ### Libraries
 The [pywcat](src/Python/README.md) package makes it easy to send previews to wcat from python.
+
+### Example usage
+
+Use [guff](https://github.com/silentbicycle/guff) in svg mode and pipe output into wcat
+```bash
+wc -l *.c | grep -v total | sort -nr | awk '{print($1)}' | ./guff -s -m line -r | wcat
+```
 
 # Development
 
