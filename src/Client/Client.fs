@@ -150,12 +150,25 @@ let showPreview currentTime preview =
                 iframe [ Src src ] [ ]
                 openInNewTabBtn src preview.Filename "Open in new tab"
 
-            | ContentTypeNotImplemented contentType ->
+            | ContentTypeNotImplemented (contentType, content) ->
                 Message.message [ Message.Color IsDanger ]
                     [
-                        Message.header ^>& "Content type not supported"
-                        Message.body ^>& contentType
+                        Message.header ^>& "Content type not supported for preview"
+                        Message.body [ ] [
+                            p ^> b ^>& contentType
+                            p [ ] [
+                                a [ Href (sprintf "%s/issues" projectGithubLink ) ] [ str "Open an issue" ]
+                                str " on github if you would like this content type to be supported"
+                            ]
+                        ]
                     ]
+                let blob = Blob.Create [| box content |]
+                let href = URL.createObjectURL blob
+                Column.column [ ] [
+                    Button.a
+                        [ Button.IsLink; Button.Props [ Download preview.Filename; Href href ] ]
+                        [ str ("Download file") ]
+                ]
 
             | LoadingPreviewContent ->
                 Icon.icon ^> Fa.i [ Fa.Solid.Spinner; Fa.Spin ] [ ]

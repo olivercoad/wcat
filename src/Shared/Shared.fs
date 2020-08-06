@@ -10,7 +10,7 @@ type PreviewContent =
     | IframeSrc of string
     | Markdown of string
     | AudioSrc of string
-    | ContentTypeNotImplemented of string
+    | ContentTypeNotImplemented of string * byte array
     | LoadingPreviewContent
 
 type Preview = {

@@ -83,6 +83,11 @@ let getPlainText (ctx:HttpContext) = task {
     return PlainText body
 }
 
+let showContentTypeNotSupported (ctx:HttpContext) = task {
+    let! bytes = readBodyBytes ctx
+    return ContentTypeNotImplemented (ctx.Request.ContentType, bytes)
+}
+
 let showthis next (ctx:HttpContext) = task {
     let hasFilename, filenameHeader = ctx.Request.Headers.TryGetValue "filename"
     let filename =
@@ -119,8 +124,7 @@ let showthis next (ctx:HttpContext) = task {
         | "text/plain" | "text/csv" ->
             getPlainText ctx
         | _ ->
-            ctx.SetStatusCode 415
-            Task.FromResult (ContentTypeNotImplemented ctx.Request.ContentType)
+            showContentTypeNotSupported ctx
 
 
     printfn "Previewing %s as %A" (Option.defaultValue "" filename) (content.GetType())

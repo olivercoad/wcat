@@ -29,12 +29,8 @@ html, body {
 }
 
 .preview-item {
-    p {
+    > p {
       font-weight: 700;
-
-      &.subtitle {
-        padding-top: 1rem;
-      }
     }
 
     hr {
