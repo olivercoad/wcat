@@ -110,7 +110,7 @@ let showthis next (ctx:HttpContext) = task {
         match contentType.MediaType with
         | "image/jpeg" | "image/png" | "image/svg+xml" | "image/webp" | "image/gif" ->
             (getBase64Src ctx contentType.MediaType ImageSrc)
-        | "text/html" ->
+        | "text/html" | "application/pdf" ->
             (getBase64Src ctx contentType.MediaType IframeSrc)
         | "audio/x-m4a" | "audio/mpeg" | "audio/flac" | "audio/wav" ->
             (getBase64Src ctx contentType.MediaType AudioSrc)
