@@ -37,16 +37,17 @@ let init clientDispatch () =
         clientDispatch <| PreviewMsg preview
     (), Cmd.none
 
-/// Elmish update function with a channel for sending client messages
-/// Returns a new state and commands
-let update clientDispatch msg model =
-    match msg with
-    | ClearPreviews -> latestPreviews.Clear()
-    model, Cmd.none
 
 let hub =
     ServerHub<_, ServerMsg, _>()
         .RegisterClient(PreviewMsg)
+
+/// Elmish update function with a channel for sending client messages
+/// Returns a new state and commands
+let update clientDispatch msg model =
+    match msg with
+    | ClearPreviews -> latestPreviews.Clear(); hub.BroadcastClient ClearClientPreviews
+    model, Cmd.none
 
 /// Connect the Elmish functions to an endpoint for websocket connections
 let bridge =

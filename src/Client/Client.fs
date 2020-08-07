@@ -98,6 +98,8 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
     match msg with
     | Remote(PreviewMsg preview) ->
         addPreview currentModel preview, Cmd.none
+    | Remote(ClearClientPreviews) ->
+        { currentModel with Previews = Map.empty }, Cmd.none
     | ClearPreviews ->
         { currentModel with Previews = Map.empty }, Cmd.bridgeSend ServerMsg.ClearPreviews
     | Tick now ->

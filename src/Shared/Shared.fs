@@ -30,3 +30,4 @@ type ServerMsg =
 /// A type that specifies the messages sent to the client from the server on Elmish.Bridge
 type ClientMsg =
     | PreviewMsg of Preview
+    | ClearClientPreviews
