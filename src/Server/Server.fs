@@ -14,6 +14,8 @@ open Elmish
 open Elmish.Bridge
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.FileProviders
+open Microsoft.AspNetCore.Http.Features
+open Microsoft.AspNetCore.Server.Kestrel.Core
 
 let tryGetEnv = System.Environment.GetEnvironmentVariable >> function null | "" -> None | x -> Some x
 
@@ -89,6 +91,7 @@ let showContentTypeNotSupported (ctx:HttpContext) = task {
 }
 
 let showthis next (ctx:HttpContext) = task {
+    ctx.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize <- Nullable(int64 MaxBodySize)
     let hasFilename, filenameHeader = ctx.Request.Headers.TryGetValue "filename"
     let filename =
         if hasFilename && filenameHeader.Count >= 1
@@ -110,33 +113,39 @@ let showthis next (ctx:HttpContext) = task {
     broadcastPreview previewLoading
 
     //Ideally would catch and broadcast errors if the request dies while processing body
+    try
+        let! content =
+            match contentType.MediaType with
+            | "image/jpeg" | "image/png" | "image/svg+xml" | "image/webp" | "image/gif" ->
+                (getBase64Src ctx contentType.MediaType ImageSrc)
+            | "text/html" | "application/pdf" ->
+                (getBase64Src ctx contentType.MediaType IframeSrc)
+            | "audio/x-m4a" | "audio/mpeg" | "audio/flac" | "audio/wav" ->
+                (getBase64Src ctx contentType.MediaType AudioSrc)
+            | "text/markdown" ->
+                getMarkdown ctx
+            | "text/plain" | "text/csv" ->
+                getPlainText ctx
+            | _ ->
+                showContentTypeNotSupported ctx
 
-    let! content =
-        match contentType.MediaType with
-        | "image/jpeg" | "image/png" | "image/svg+xml" | "image/webp" | "image/gif" ->
-            (getBase64Src ctx contentType.MediaType ImageSrc)
-        | "text/html" | "application/pdf" ->
-            (getBase64Src ctx contentType.MediaType IframeSrc)
-        | "audio/x-m4a" | "audio/mpeg" | "audio/flac" | "audio/wav" ->
-            (getBase64Src ctx contentType.MediaType AudioSrc)
-        | "text/markdown" ->
-            getMarkdown ctx
-        | "text/plain" | "text/csv" ->
-            getPlainText ctx
-        | _ ->
-            showContentTypeNotSupported ctx
 
+        printfn "Previewing %s as %A" (Option.defaultValue "" filename) (content.GetType())
+        let preview = { previewLoading with Content = content }
 
-    printfn "Previewing %s as %A" (Option.defaultValue "" filename) (content.GetType())
-    let preview = { previewLoading with Content = content }
-
-    broadcastPreview preview
+        broadcastPreview preview
+    with
+    | :? BadHttpRequestException as ex when ex.Message = "Request body too large." ->
+        // printfn "msg: %s" ex.Message
+        let preview = { previewLoading with Content = RequestBodyTooLarge }
+        broadcastPreview preview
+        // ctx.SetStatusCode
 
     return! json {| ContentType = sprintf "%A" contentType |} next ctx
 }
 
 let apiRouter = router {
-    not_found_handler (setStatusCode 200 >=> text "api 404")
+    not_found_handler (setStatusCode 404 >=> text "api 404")
     post "/showthis" showthis
 }
 

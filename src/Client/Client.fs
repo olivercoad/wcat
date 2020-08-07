@@ -180,6 +180,15 @@ let showPreview currentTime preview =
             | LoadingPreviewContent ->
                 Icon.icon ^> Fa.i [ Fa.Solid.Spinner; Fa.Spin ] [ ]
 
+            | RequestBodyTooLarge ->
+                Message.message [ Message.Color IsDanger ]
+                    [
+                        Message.header ^>& "The file is too large to preview"
+                        Message.body [ ] [
+                            p ^>& sprintf "The maximum file size for preview is %s MB" ((MaxBodySize/1000_000)?toLocaleString())
+                        ]
+                    ]
+
             p [ ] [ str (Option.defaultValue "" preview.Filename) ]
             Columns.columns [ Columns.CustomClass "preview-info" ] [
                 Column.column [ ] [

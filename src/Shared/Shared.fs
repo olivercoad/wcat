@@ -3,6 +3,7 @@ open System
 
 let BridgeSocketEndpoint = "/socket/init"
 let projectGithubLink = "https://github.com/olivercoad/wcat"
+let MaxBodySize = 4_000_000 //bytes
 
 type PreviewContent =
     | ImageSrc of string
@@ -11,6 +12,7 @@ type PreviewContent =
     | Markdown of string
     | AudioSrc of string
     | ContentTypeNotImplemented of string * byte array
+    | RequestBodyTooLarge
     | LoadingPreviewContent
 
 type Preview = {
