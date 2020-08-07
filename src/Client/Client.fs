@@ -14,7 +14,10 @@ open Thoth.Fetch
 open Fulma
 open Thoth.Json
 
+open ReactDropzoneUploader
+
 open Shared
+open Fable.Core.JsInterop
 
 // [<ImportAll("moment")>]
 // let moment = jsNative
@@ -60,6 +63,7 @@ let utilities:IUtilities = jsNative
 type Model = {
     CurrentTime: System.DateTime
     Previews: Map<System.Guid, Preview>
+    ShowDropzone: bool
 }
 
 // The Msg type defines what events/actions can occur while the application is running
@@ -69,6 +73,7 @@ type Msg =
     | Remote of ClientMsg
     | Tick of System.DateTime
     | ClearPreviews
+    | ToggleDropzone
 
 let timer initial = // used to update "2 minutes ago" momentjs message
     let sub dispatch =
@@ -79,7 +84,7 @@ let timer initial = // used to update "2 minutes ago" momentjs message
 
 // defines the initial state and initial command (= side-effect) of the application
 let init () : Model * Cmd<Msg> =
-    { Previews = Map.empty; CurrentTime = System.DateTime.Now }, Cmd.none
+    { Previews = Map.empty; CurrentTime = System.DateTime.Now; ShowDropzone = false }, Cmd.none
 
 let addPreview model preview =
     match preview.Content, model.Previews.ContainsKey preview.Id with
@@ -97,6 +102,8 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
         { currentModel with Previews = Map.empty }, Cmd.bridgeSend ServerMsg.ClearPreviews
     | Tick now ->
         { currentModel with CurrentTime = now }, Cmd.none
+    | ToggleDropzone ->
+        { currentModel with ShowDropzone = not currentModel.ShowDropzone }, Cmd.none
 
 /// Creates a pre with class box
 let preBox options children = pre (upcast ClassName "box"::options) children
@@ -244,9 +251,60 @@ let navbar dispatch =
             Navbar.Item.a [ Navbar.Item.Props [ Href projectGithubLink ] ] ^>>& Version.app
         ]
         Navbar.End.div [ ] [
+            navItem (fun _ -> dispatch ToggleDropzone) ^>>& "Show dropzone"
             navItem (fun _ -> dispatch ClearPreviews) ^>>& "Clear Previews"
             navItem scrollToBottom [ p ^>& "Go to Bottom"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronDown ] [ ] ]
             navItem scrollToTop [ p ^>& "Go to Top"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronUp ] [ ] ]
+        ]
+    ]
+
+let showDropzone model dispatch =
+    Modal.modal [ Modal.IsActive model.ShowDropzone ] [
+        Modal.background [ Props [ OnClick (fun _ -> dispatch ToggleDropzone) ] ] [ ]
+        Modal.Card.card [ ] [
+            Modal.Card.head [ ] [
+                Modal.Card.title [ ] [ str "Send files back to the terminal" ]
+                Delete.delete [ Delete.OnClick (fun _ -> dispatch ToggleDropzone) ] [ ]
+            ]
+            Modal.Card.body [ ] [
+                dropzone [
+                    MaxFiles 1
+                    Multiple false
+                    MaxSizeBytes MaxBodySize
+                    InputContent (fun _ _ -> str "Drop a File")
+                    OnChangeStatus (
+                        fun file status allFiles ->
+                            printfn "File is: %s" (string file)
+                            printfn "Status is: %s" (string status)
+                            printfn "AllFiles is: %s" (string allFiles)
+                            match status with
+                            | Done ->
+                                file.remove()
+                                None
+                            | _ ->
+                                None
+                    )
+
+                    GetUploadParams (fun file -> promise {
+                        let uploadParams = jsOptions<IUploadParams>(fun p ->
+                            p.url <- "/api/showthis"
+                            p.method <- Some POST
+                            p.headers <-
+                                {|
+                                    filename = file.meta.name
+
+                                |}
+                            p.body <- file.file
+                        )
+
+                        return uploadParams
+                    })
+                ] [ ]
+            ]
+            Modal.Card.foot [ ] [
+                Button.button [ Button.Color IsSuccess ] [ str "Done" ]
+                Button.button [ ] [ str "Cancel" ]
+            ]
         ]
     ]
 
@@ -269,8 +327,9 @@ let view (model : Model) (dispatch : Msg -> unit) =
                 downloadButtons
             ]
         ]
-    ]
 
+        showDropzone model dispatch
+    ]
 
 #if DEBUG
 open Elmish.Debug
