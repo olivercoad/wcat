@@ -298,7 +298,7 @@ let showDropzone model dispatch =
 
                     GetUploadParams (fun file -> promise {
                         let uploadParams = jsOptions<IUploadParams>(fun p ->
-                            p.url <- "/api/showthis"
+                            p.url <- "/api/uploadfile"
                             p.method <- Some POST
                             p.headers <-
                                 {|
@@ -313,8 +313,7 @@ let showDropzone model dispatch =
                 ] [ ]
             ]
             Modal.Card.foot [ ] [
-                Button.button [ Button.Color IsSuccess ] [ str "Done" ]
-                Button.button [ ] [ str "Cancel" ]
+                Button.button [ Button.Color IsSuccess; Button.OnClick (fun _ -> dispatch ToggleDropzone) ] [ str "Done" ]
             ]
         ]
     ]
@@ -340,6 +339,8 @@ let view (model : Model) (dispatch : Msg -> unit) =
         ]
 
         showDropzone model dispatch
+
+        iframe [ Src "/api/downloadfile" ] [ ]
     ]
 
 #if DEBUG

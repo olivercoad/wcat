@@ -29,6 +29,7 @@ let port =
 let previewHistory = 60
 printfn "Initialising previews queue"
 let latestPreviews = Collections.Concurrent.ConcurrentQueue<Preview>()
+let mutable latestFileContent : (string option * byte array) option = None
 
 /// Elmish init function with a channel for sending client messages
 /// Returns a new state and commands
@@ -91,14 +92,15 @@ let showContentTypeNotSupported (ctx:HttpContext) = task {
     return ContentTypeNotImplemented (ctx.Request.ContentType, bytes)
 }
 
+let getFilename (ctx:HttpContext) =
+    let hasFilename, filenameHeader = ctx.Request.Headers.TryGetValue "filename"
+    if hasFilename && filenameHeader.Count >= 1
+    then Some (filenameHeader.Item 0)
+    else None
+
 let showthis next (ctx:HttpContext) = task {
     ctx.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize <- Nullable(int64 MaxBodySize)
-    let hasFilename, filenameHeader = ctx.Request.Headers.TryGetValue "filename"
-    let filename =
-        if hasFilename && filenameHeader.Count >= 1
-        then Some (filenameHeader.Item 0)
-        else None
-
+    let filename = getFilename ctx
     let contentType = Net.Mime.ContentType ctx.Request.ContentType
     let now = DateTime.UtcNow
 
@@ -145,9 +147,37 @@ let showthis next (ctx:HttpContext) = task {
     return! json {| ContentType = sprintf "%A" contentType |} next ctx
 }
 
+let downloadLatestFile next (ctx:HttpContext) = task {
+    match latestFileContent with
+    | None ->
+        ctx.SetStatusCode 409
+        return! text "There is nothing to preview. Send a file and try again" next ctx
+    | Some (filename, content) ->
+        ctx.SetContentType "application/octet-stream"
+
+        //specify as an attachment with filename
+        filename
+        |> Option.defaultValue "latest"
+        |> Uri.EscapeDataString //https://stackoverflow.com/a/6745788
+        |> sprintf "attachment; filename*=UTF-8''%s"
+        |> ctx.SetHttpHeader "Content-Disposition"
+
+        return! setBody content next ctx
+}
+
+let uploadFile next (ctx:HttpContext) = task {
+    ctx.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize <- Nullable(int64 MaxBodySize)
+    let filename = getFilename ctx
+    let! bytes = readBodyBytes ctx
+    latestFileContent <- Some (filename, bytes)
+    return! json {| Filename = filename; NumBytes = bytes.Length |} next ctx
+}
+
 let apiRouter = router {
     not_found_handler (setStatusCode 404 >=> text "api 404")
     post "/showthis" showthis
+    get "/downloadfile" downloadLatestFile
+    post "/uploadfile" uploadFile
 }
 
 let webApp =
