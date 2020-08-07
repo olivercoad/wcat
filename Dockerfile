@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.0 as fakebuild
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 as fakebuild
 
 
 # Add keys and sources lists
@@ -44,7 +44,7 @@ RUN env CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -o /wcat/bin/wcat-windows
 RUN env CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o /wcat/bin/wcat-darwin-amd64
 
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.0-alpine as server
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-alpine as server
 COPY --from=gobuilder /wcat/bin /Client/public/clitool
 COPY --from=gobuilder /wcat/bin/wcat-linux-amd64 /bin/wcat
 COPY --from=fakebuild /workspace/deploy /

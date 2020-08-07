@@ -67,7 +67,7 @@ The cli tool is build with go.
 
 You'll need to install the following pre-requisites in order to build SAFE applications
 
-* The [.NET Core SDK](https://www.microsoft.com/net/download)
+* The [.NET Core 3.1 SDK](https://www.microsoft.com/net/download)
 * [FAKE 5](https://fake.build/) installed as a [global tool](https://fake.build/fake-gettingstarted.html#Install-FAKE)
 * The [Yarn](https://yarnpkg.com/lang/en/docs/install/) package manager (you can also use `npm` but the usage of `yarn` is encouraged).
 * [Node LTS](https://nodejs.org/en/download/) installed for the front end components.
