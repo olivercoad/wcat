@@ -162,6 +162,11 @@ let downloadLatestFile next (ctx:HttpContext) = task {
         |> sprintf "attachment; filename*=UTF-8''%s"
         |> ctx.SetHttpHeader "Content-Disposition"
 
+        //specify filename to save with cli tool
+        filename
+        |> Option.defaultValue ""
+        |> Uri.EscapeDataString //https://stackoverflow.com/a/6745788
+        |> ctx.SetHttpHeader "filename"
         return! setBody content next ctx
 }
 

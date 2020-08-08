@@ -339,8 +339,6 @@ let view (model : Model) (dispatch : Msg -> unit) =
         ]
 
         showDropzone model dispatch
-
-        iframe [ Src "/api/downloadfile" ] [ ]
     ]
 
 #if DEBUG
