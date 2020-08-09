@@ -1,7 +1,11 @@
 # wcat - web cat
 
-wcat is a webapp and cli tool which allows you to send images
-to your browser while navigating a remote machine with ssh.
+wcat is a webapp and cli tool which allows you to send *small* files
+to your browser to be previewed, such as images or pdfs, while navigating a remote machine with ssh.
+
+It is also possible to drop a file in the browser and download it from the terminal.
+
+It's intended to help bridge the gap between cli and gui by reducing the need to open new terminals just to rsync small files back and forth.
 
 ## Setup the server
 
@@ -13,7 +17,7 @@ docker run -d --name wcat -p "8085:8085" olicoad/wcat:latest
 
 ## Setup the cli tool
 
-Download the cli tool.
+Download the pre-compiled cli tool from the server.
 For example, on linux:
 
 ```bash
@@ -29,6 +33,18 @@ Run `wcat` just like you would use `cat` to preview files.
 
 ```bash
 wcat example.jpg
+```
+
+Just like cat, if no files are specified, wcat listens on stdin
+
+```bash
+echo "hello world" | wcat
+```
+
+To send a file back from the browser, click "Show Dropzone" and drop a file in. Then download the latest dropped file using wcat.
+
+```bash
+wcat download # default output-document is ./[filename]
 ```
 
 ### Usage on a remote machine
@@ -64,6 +80,7 @@ This project is build on the [SAFE Stack](https://safe-stack.github.io/). It was
 The cli tool is build with go.
 
 ## Install pre-requisites
+**Only needed for development**
 
 You'll need to install the following pre-requisites in order to build SAFE applications
 
@@ -84,12 +101,12 @@ It will concurrently run the server and frontend in watch mode and `go install` 
 fake build -t Run
 ```
 
+## Docker
 
-
-You can use the included `Dockerfile` and `build.fsx` script to deploy your application as Docker container.
+You can use the included `Dockerfile` to build everything using docker.
 
 ```bash
-fake build -t Docker
+docker build -t wcat .
 ```
 
 ## SAFE Stack Documentation
