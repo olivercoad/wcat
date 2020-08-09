@@ -86,10 +86,26 @@ let timer initial = // used to update "2 minutes ago" momentjs message
 let init () : Model * Cmd<Msg> =
     { Previews = Map.empty; CurrentTime = System.DateTime.Now; ShowDropzone = false }, Cmd.none
 
-let addPreview model preview =
-    match preview.Content, model.Previews.ContainsKey preview.Id with
-    | LoadingPreviewContent, true -> model
-    | _ -> { model with Previews = model.Previews.Add(preview.Id, preview); CurrentTime = System.DateTime.Now }
+let addPreview model preview currentTime =
+    let previews =
+        match preview.Content, model.Previews.ContainsKey preview.Id with
+        //if client disconnects and reconnects with server, it's possible to get messages repeated.
+        | LoadingPreviewContent, true -> model.Previews //never replace already loaded preview with loading preview
+        | _ -> model.Previews.Add(preview.Id, preview)
+    let maxCount = 100
+    let cutBy = 10
+    let truncated =
+        if previews.Count <= maxCount
+        then
+            previews
+        else
+            previews
+            |> Map.toList
+            |> List.sortByDescending (fun (_, p) -> p.Time)
+            |> List.take (maxCount - cutBy)
+            |> Map.ofList
+
+    { model with Previews = truncated; CurrentTime = currentTime }
 
 // The update function computes the next state of the application based on the current state and the incoming events/messages
 // It can also run side-effects (encoded as commands) like calling the server via Http.
@@ -97,7 +113,7 @@ let addPreview model preview =
 let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
     match msg with
     | Remote(PreviewMsg preview) ->
-        addPreview currentModel preview, Cmd.none
+        addPreview currentModel preview System.DateTime.Now, Cmd.none
     | Remote(ClearClientPreviews) ->
         { currentModel with Previews = Map.empty }, Cmd.none
     | ClearPreviews ->
