@@ -1,3 +1,13 @@
+### 0.4.0 - 2020-08-10
+* Add support for **gif**, **pdf** files
+* Add support to download unknown content types
+* Handle request too large better
+* Upgrade dependencies
+* Upgrade to dotnet core 3.1
+* Sync clear preview between all clients
+* Add dropzone feature to send files back from the browser
+* Make client truncate preview list when it gets long
+
 ### 0.3.2 - 2020-07-26
 * Add support for **webp** files
 
