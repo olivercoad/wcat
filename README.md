@@ -1,3 +1,5 @@
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/olivercoad/wcat)
+
 # wcat - web cat
 
 wcat is a webapp and cli tool which allows you to send *small* files
