@@ -1,5 +1,3 @@
-[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/olivercoad/wcat)
-
 # wcat - web cat
 
 wcat is a webapp and cli tool which allows you to send *small* files
@@ -125,3 +123,17 @@ If you want to know more about the full Azure Stack and all of it's components (
 ## Troubleshooting
 
 * **fake not found** - If you fail to execute `fake` from command line after installing it as a global tool, you might need to add it to your `PATH` manually: (e.g. `export PATH="$HOME/.dotnet/tools:$PATH"` on unix) - [related GitHub issue](https://github.com/dotnet/cli/issues/9321)
+
+# Try it with Gitpod
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/olivercoad/wcat)
+
+It should automatically install all dependencies and run `dotnet fake build -t run`.
+
+This is the full developer environment including hot reloading client, live reloading server,
+and automatically installing the cli tool on code changes.
+
+Just wait a couple minutes for everything to compile and run, open a terminal and try wcat.
+
+```
+wcat README.md
+```
