@@ -1,4 +1,4 @@
-﻿// Template for webpack.config.js in Fable projects
+// Template for webpack.config.js in Fable projects
 // Find latest version in https://github.com/fable-compiler/webpack-config-template
 
 // In most cases, you'll only need to edit the CONFIG object (after dependencies)
@@ -113,6 +113,7 @@ module.exports = {
         publicPath: '/',
         contentBase: resolve(CONFIG.assetsDir),
         host: '0.0.0.0',
+        disableHostCheck: true,
         port: CONFIG.devServerPort,
         proxy: CONFIG.devServerProxy,
         hot: true,

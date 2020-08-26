@@ -1,0 +1,13 @@
+image:
+  file: .gitpod.Dockerfile
+tasks:
+  - init: dotnet tool restore
+    command: dotnet fake build -t run
+vscode:
+  extensions:
+    - msjsdiag.debugger-for-chrome@4.12.6:IdQBlCQEnixzHAOkHC36ew==
+ports:
+  - port: 8084
+    onOpen: open-preview
+  - port: 8085
+    onOpen: ignore
