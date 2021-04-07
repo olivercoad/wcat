@@ -1,3 +1,8 @@
+### 0.5.0 - 2021-04-07
+* Add **--nomax** as an easy way to disable image max width and height
+* Add **--justfile** to avoid processing and previewing files
+* Add burger to access nav menu on smaller screens
+
 ### 0.4.0 - 2020-08-10
 * Add support for **gif**, **pdf** files
 * Add support to download unknown content types
