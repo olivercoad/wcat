@@ -56,32 +56,8 @@ func resizeImage(img image.Image, maxWidth, maxHeight int) *io.PipeReader {
 	return outr
 }
 
-// PreviewFile posts the file to the wcat server with filename and Content-Type headers.
-func PreviewFile(client *http.Client, wcatserver string, filename string, input io.ReadSeeker, maxwidth, maxheight int, justFile bool) {
-
-	contentType, err := mimetype.DetectReader(input)
-	extension := strings.ToLower(filepath.Ext(filename))
-	if err != nil {
-		fmt.Println(aurora.Red(err))
-		return
-	}
-	_, err = input.Seek(0, 0)
-	if err != nil {
-		fmt.Println(aurora.Red(err))
-		return
-	}
-	var requestBody io.Reader = input
-	if isResizeImage(contentType) {
-		img, err := readImage(input, contentType)
-		if err != nil {
-			fmt.Println(aurora.Red(err))
-			return
-		}
-		resizedBodyReader := resizeImage(img, maxwidth, maxheight)
-		defer resizedBodyReader.Close()
-		requestBody = resizedBodyReader
-	}
-
+// postFile posts the file to the wcat server with filename and Content-Type headers.
+func postFile(client *http.Client, wcatserver string, filename string, contentTypeHeader string, requestBody io.Reader, justFile bool) {
 	req, err := http.NewRequest("POST", wcatserver+"/api/showthis", requestBody)
 	if err != nil {
 		fmt.Println(aurora.Red("Error making request"), err)
@@ -90,10 +66,8 @@ func PreviewFile(client *http.Client, wcatserver string, filename string, input 
 	if justFile {
 		req.Header.Set("Content-Type", "application/octet-stream")
 		req.Header.Set("justfile", "true")
-	} else if contentType.Is("text/plain") && extension == ".md" {
-		req.Header.Set("Content-Type", "text/markdown")
 	} else {
-		req.Header.Set("Content-Type", contentType.String())
+		req.Header.Set("Content-Type", contentTypeHeader)
 	}
 
 	req.Header.Set("filename", filepath.Base(filename))
@@ -113,6 +87,46 @@ func PreviewFile(client *http.Client, wcatserver string, filename string, input 
 	} else {
 		fmt.Println(aurora.Red(resp.Status))
 		fmt.Printf("%s\n", body)
+	}
+}
+
+// PreviewFile optionally detects the content type and resizes images before calling postFile
+func PreviewFile(client *http.Client, wcatserver string, filename string, input io.ReadSeeker, maxwidth, maxheight int, justFile bool) {
+	if justFile {
+		var requestBody io.Reader = input
+		var contentTypeHeader = "application/octet-stream"
+		postFile(client, wcatserver, filename, contentTypeHeader, requestBody, justFile)
+	} else {
+		contentType, err := mimetype.DetectReader(input)
+		if err != nil {
+			fmt.Println(aurora.Red(err))
+			return
+		}
+		_, err = input.Seek(0, 0)
+		if err != nil {
+			fmt.Println(aurora.Red(err))
+			return
+		}
+		var requestBody io.Reader = input
+		if isResizeImage(contentType) {
+			img, err := readImage(input, contentType)
+			if err != nil {
+				fmt.Println(aurora.Red(err))
+				return
+			}
+			resizedBodyReader := resizeImage(img, maxwidth, maxheight)
+			defer resizedBodyReader.Close()
+			requestBody = resizedBodyReader
+		}
+
+		extension := strings.ToLower(filepath.Ext(filename))
+
+		contentTypeHeader := contentType.String()
+
+		if contentType.Is("text/plain") && extension == ".md" {
+			contentTypeHeader = "text/markdown"
+		}
+		postFile(client, wcatserver, filename, contentTypeHeader, requestBody, justFile)
 	}
 }
 
