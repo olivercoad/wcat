@@ -87,20 +87,30 @@ let getPlainText (ctx:HttpContext) = task {
     return PlainText body
 }
 
-let showContentTypeNotSupported (ctx:HttpContext) = task {
+let showContentTypeNotSupported fileExtension (ctx:HttpContext) = task {
     let! bytes = readBodyBytes ctx
-    return ContentTypeNotImplemented (ctx.Request.ContentType, bytes)
+    return ContentTypeNotImplemented (fileExtension, ctx.Request.ContentType, bytes)
+}
+
+let showJustFile (ctx:HttpContext) = task {
+    let! bytes = readBodyBytes ctx
+    return JustFile bytes
 }
 
 let getFilename (ctx:HttpContext) =
     let hasFilename, filenameHeader = ctx.Request.Headers.TryGetValue "filename"
     if hasFilename && filenameHeader.Count >= 1
-    then Some (filenameHeader.Item 0)
+    then Some (filenameHeader.[0])
     else None
+
+let isJustFile (ctx:HttpContext) =
+    let hasJustFile, justFileHeader = ctx.Request.Headers.TryGetValue "justfile"
+    hasJustFile && justFileHeader.Count >= 1 && justFileHeader.[0].ToLowerInvariant() = "true"
 
 let showthis next (ctx:HttpContext) = task {
     ctx.Features.Get<IHttpMaxRequestBodySizeFeature>().MaxRequestBodySize <- Nullable(int64 MaxBodySize)
     let filename = getFilename ctx
+    let justFile = isJustFile ctx
     let contentType = Net.Mime.ContentType ctx.Request.ContentType
     let now = DateTime.UtcNow
 
@@ -129,8 +139,11 @@ let showthis next (ctx:HttpContext) = task {
                 getMarkdown ctx
             | "text/plain" | "text/csv" ->
                 getPlainText ctx
+            | "application/octet-stream" when justFile ->
+                showJustFile ctx
             | _ ->
-                showContentTypeNotSupported ctx
+                let fileExtension = Option.map<string, string> Path.GetExtension filename
+                showContentTypeNotSupported fileExtension ctx
 
 
         printfn "Previewing %s as %A" (Option.defaultValue "" filename) (content.GetType())

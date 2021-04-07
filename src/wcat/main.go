@@ -57,7 +57,7 @@ func resizeImage(img image.Image, maxWidth, maxHeight int) *io.PipeReader {
 }
 
 // PreviewFile posts the file to the wcat server with filename and Content-Type headers.
-func PreviewFile(client *http.Client, wcatserver string, filename string, input io.ReadSeeker, maxwidth, maxheight int) {
+func PreviewFile(client *http.Client, wcatserver string, filename string, input io.ReadSeeker, maxwidth, maxheight int, justFile bool) {
 
 	contentType, err := mimetype.DetectReader(input)
 	extension := strings.ToLower(filepath.Ext(filename))
@@ -87,7 +87,10 @@ func PreviewFile(client *http.Client, wcatserver string, filename string, input 
 		fmt.Println(aurora.Red("Error making request"), err)
 		return
 	}
-	if contentType.Is("text/plain") && extension == ".md" {
+	if justFile {
+		req.Header.Set("Content-Type", "application/octet-stream")
+		req.Header.Set("justfile", "true")
+	} else if contentType.Is("text/plain") && extension == ".md" {
 		req.Header.Set("Content-Type", "text/markdown")
 	} else {
 		req.Header.Set("Content-Type", contentType.String())
@@ -344,7 +347,13 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "nomax",
 				Value: false,
-				Usage: "disable maxwidth and maxheight. shorthand for  --mw 0 --mh 0",
+				Usage: "disable maxwidth and maxheight; shorthand for  --mw 0 --mh 0",
+			},
+			&cli.BoolFlag{
+				Name:    "justfile",
+				Aliases: []string{"j"},
+				Value:   false,
+				Usage:   "don't try to preview/process the file; just upload it as-is for download",
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -353,6 +362,7 @@ func main() {
 			maxwidth := c.Int("maxwidth")
 			maxheight := c.Int("maxheight")
 			nomax := c.Bool("nomax")
+			justfile := c.Bool("justfile")
 			if nomax {
 				maxwidth = 0
 				maxheight = 0
@@ -371,7 +381,7 @@ func main() {
 					} else {
 						defer f.Close()
 						fmt.Print("Preview file ", filename, " ... ")
-						PreviewFile(client, wcatserver, filename, f, maxwidth, maxheight)
+						PreviewFile(client, wcatserver, filename, f, maxwidth, maxheight, justfile)
 					}
 				}
 			} else {
@@ -386,7 +396,7 @@ func main() {
 
 				reader := bytes.NewReader(input)
 				filename := "stdin"
-				PreviewFile(client, wcatserver, filename, reader, maxwidth, maxheight)
+				PreviewFile(client, wcatserver, filename, reader, maxwidth, maxheight, justfile)
 			}
 			return nil
 		},

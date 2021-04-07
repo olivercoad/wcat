@@ -150,6 +150,15 @@ let openInNewTabBtn src title text =
             [ str text ]
     ]
 
+let downloadButton filename (content: byte array) =
+    let blob = Blob.Create [| box content |]
+    let href = URL.createObjectURL blob
+    Column.column [ ] [
+        Button.a
+            [ Button.IsLink; Button.Props [ Download filename; Href href ] ]
+            [ str ("Download file") ]
+    ]
+
 let showPreview currentTime preview =
     Column.column
         [
@@ -175,25 +184,32 @@ let showPreview currentTime preview =
                 iframe [ Src src ] [ ]
                 openInNewTabBtn src preview.Filename "Open in new tab"
 
-            | ContentTypeNotImplemented (contentType, content) ->
+            | ContentTypeNotImplemented (fileExtension, contentType, content) ->
                 Message.message [ Message.Color IsDanger ]
                     [
+                        let ext =
+                            match fileExtension with
+                            | Some fext -> sprintf " (%s)" fext
+                            | None -> ""
                         Message.header ^>& "Content type not supported for preview"
                         Message.body [ ] [
-                            p ^> b ^>& contentType
+                            p ^> b ^>& contentType + ext
                             p [ ] [
                                 a [ Href (sprintf "%s/issues" projectGithubLink ) ] [ str "Open an issue" ]
                                 str " on github if you would like this content type to be supported"
                             ]
+                            p [ ] [
+                                str "Use "
+                                code [ ] [ str "--justfile" ]
+                                str " if you don't want a preview"
+                            ]
                         ]
                     ]
-                let blob = Blob.Create [| box content |]
-                let href = URL.createObjectURL blob
-                Column.column [ ] [
-                    Button.a
-                        [ Button.IsLink; Button.Props [ Download preview.Filename; Href href ] ]
-                        [ str ("Download file") ]
-                ]
+                downloadButton preview.Filename content
+
+            | JustFile content ->
+                div [ ] [ p [ ] [ str "Just the file (no preview)"] ]
+                downloadButton preview.Filename content
 
             | LoadingPreviewContent ->
                 Icon.icon ^> Fa.i [ Fa.Solid.Spinner; Fa.Spin ] [ ]

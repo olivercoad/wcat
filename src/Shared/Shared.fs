@@ -11,7 +11,8 @@ type PreviewContent =
     | IframeSrc of string
     | Markdown of string
     | AudioSrc of string
-    | ContentTypeNotImplemented of string * byte array
+    | ContentTypeNotImplemented of fileExtension:string option * contentType:string * content:byte array
+    | JustFile of byte array
     | RequestBodyTooLarge
     | LoadingPreviewContent
 
