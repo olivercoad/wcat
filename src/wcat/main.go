@@ -333,6 +333,35 @@ func downloadFileToStdout(client *http.Client, wcatserver string) error {
 	return body.Close()
 }
 
+func clearPreviews(client *http.Client, wcatserver string) error {
+	fmt.Print("Sending message to clear previews ... ")
+	req, err := http.NewRequest("POST", wcatserver+"/api/clearpreviews", nil)
+	if err != nil {
+		fmt.Println(aurora.Red("Error making request"))
+		return err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(aurora.Red("Error doing POST request"))
+		return err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(aurora.Red("Error reading response body"))
+		return err
+	}
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		fmt.Println(aurora.Cyan("Previews Cleared"))
+		return nil
+	} else {
+		fmt.Println(aurora.Red(resp.Status))
+		fmt.Printf("%s\n", body)
+		return errors.New("Response code not 2xx")
+	}
+}
+
 func main() {
 	app := &cli.App{
 		Name:      "wcat",
@@ -452,6 +481,25 @@ func main() {
 						return downloadFileToDirectory(client, wcatserver, outputLoc, overwrite)
 					}
 					return downloadFileDirectlyToFile(client, wcatserver, outputLoc, overwrite)
+				},
+			},
+			{
+				Name:    "clear",
+				Aliases: []string{"c"},
+				Usage:   "clear previews",
+				Flags:   []cli.Flag{},
+				Action: func(c *cli.Context) error {
+					if c.NArg() > 0 {
+						return cli.Exit("The clear command takes no positional arguments", 12)
+					}
+					wcatserver := c.String("server")
+					client := &http.Client{}
+					err := clearPreviews(client, wcatserver)
+					if err != nil {
+						return cli.Exit(err, 13)
+					} else {
+						return nil
+					}
 				},
 			},
 		},

@@ -16,7 +16,7 @@ open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.FileProviders
 open Microsoft.AspNetCore.Http.Features
 open Microsoft.AspNetCore.Server.Kestrel.Core
-
+open Giraffe.HttpStatusCodeHandlers
 let tryGetEnv = System.Environment.GetEnvironmentVariable >> function null | "" -> None | x -> Some x
 
 let publicPath = Path.GetFullPath "../Client/public"
@@ -43,11 +43,14 @@ let hub =
     ServerHub<_, ServerMsg, _>()
         .RegisterClient(PreviewMsg)
 
+let clearPreviews () =
+    latestPreviews.Clear(); hub.BroadcastClient ClearClientPreviews
+
 /// Elmish update function with a channel for sending client messages
 /// Returns a new state and commands
 let update clientDispatch msg model =
     match msg with
-    | ClearPreviews -> latestPreviews.Clear(); hub.BroadcastClient ClearClientPreviews
+    | ClearPreviews -> clearPreviews ()
     model, Cmd.none
 
 /// Connect the Elmish functions to an endpoint for websocket connections
@@ -194,6 +197,7 @@ let uploadFile next (ctx:HttpContext) = task {
 let apiRouter = router {
     not_found_handler (setStatusCode 404 >=> text "api 404")
     post "/showthis" showthis
+    post "/clearpreviews" (warbler (fun _ -> clearPreviews (); Successful.OK "cleared"))
     get "/downloadfile" downloadLatestFile
     post "/uploadfile" uploadFile
 }
