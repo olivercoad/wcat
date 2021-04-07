@@ -341,12 +341,22 @@ func main() {
 				Value:   800,
 				Usage:   "the max height for images. 0 for no max height",
 			},
+			&cli.BoolFlag{
+				Name:  "nomax",
+				Value: false,
+				Usage: "disable maxwidth and maxheight. shorthand for  --mw 0 --mh 0",
+			},
 		},
 		Action: func(c *cli.Context) error {
 			client := &http.Client{}
 			wcatserver := c.String("server")
 			maxwidth := c.Int("maxwidth")
 			maxheight := c.Int("maxheight")
+			nomax := c.Bool("nomax")
+			if nomax {
+				maxwidth = 0
+				maxheight = 0
+			}
 			if c.NArg() >= 1 {
 				for i := 0; i < c.NArg(); i++ {
 					filename := c.Args().Get(i)
