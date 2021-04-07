@@ -64,6 +64,7 @@ type Model = {
     CurrentTime: System.DateTime
     Previews: Map<System.Guid, Preview>
     ShowDropzone: bool
+    MenuActive: bool
 }
 
 // The Msg type defines what events/actions can occur while the application is running
@@ -74,6 +75,7 @@ type Msg =
     | Tick of System.DateTime
     | ClearPreviews
     | ToggleDropzone
+    | ToggleMenu
 
 let timer initial = // used to update "2 minutes ago" momentjs message
     let sub dispatch =
@@ -84,7 +86,7 @@ let timer initial = // used to update "2 minutes ago" momentjs message
 
 // defines the initial state and initial command (= side-effect) of the application
 let init () : Model * Cmd<Msg> =
-    { Previews = Map.empty; CurrentTime = System.DateTime.Now; ShowDropzone = false }, Cmd.none
+    { Previews = Map.empty; CurrentTime = System.DateTime.Now; ShowDropzone = false; MenuActive = false }, Cmd.none
 
 let addPreview model preview currentTime =
     let previews =
@@ -122,6 +124,8 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
         { currentModel with CurrentTime = now }, Cmd.none
     | ToggleDropzone ->
         { currentModel with ShowDropzone = not currentModel.ShowDropzone }, Cmd.none
+    | ToggleMenu ->
+        { currentModel with MenuActive = not currentModel.MenuActive }, Cmd.none
 
 /// Creates a pre with class box
 let preBox options children = pre (upcast ClassName "box"::options) children
@@ -138,11 +142,8 @@ let withLineBreaks (content:string) =
 
 let openInNewTabBtn src title text =
     let winopen src _ =
-        // window.``open``(src) |> ignore
         utilities.OpenInNewTab (src, Option.defaultValue "wcat preview" title)
         ()
-
-    // let src = "https://checkface.ml"
 
     Column.column [ ] [
         Button.button
@@ -282,22 +283,37 @@ let downloadButtons =
 
     Button.list [ Button.List.IsCentered; Button.List.AreMedium; Button.List.Modifiers [  ] ] buttons
 
-let navbar dispatch =
+let navbar menuActive dispatch =
     let navItem onclick children =
         Navbar.Item.a
             [ Navbar.Item.Props [ OnClick onclick ] ]
             children
-
-    Navbar.navbar [ Navbar.IsFixedBottom; ]
-    ^>> Navbar.menu [ ] [
-        Navbar.Start.div [ ] [
-            Navbar.Item.a [ Navbar.Item.Props [ Href projectGithubLink ] ] ^>>& Version.app
+    let burger =
+        Navbar.burger [
+            Navbar.Burger.OnClick (fun _ -> dispatch ToggleMenu)
+            Navbar.Burger.IsActive menuActive
+            Navbar.Burger.Props [
+                Role "button"
+                AriaLabel "menu"
+                AriaExpanded menuActive
+            ]
+        ] [
+            for _ in 1..3 do
+                span [ AriaHidden true ] [ ]
         ]
-        Navbar.End.div [ ] [
-            navItem (fun _ -> dispatch ToggleDropzone) ^>>& "Show dropzone"
-            navItem (fun _ -> dispatch ClearPreviews) ^>>& "Clear Previews"
-            navItem scrollToBottom [ p ^>& "Go to Bottom"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronDown ] [ ] ]
-            navItem scrollToTop [ p ^>& "Go to Top"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronUp ] [ ] ]
+
+    Navbar.navbar [ Navbar.IsFixedBottom; ] [
+        Navbar.Brand.a [ ] [ burger ]
+        Navbar.menu [ Navbar.Menu.IsActive menuActive ] [
+            Navbar.Start.div [ ] [
+                Navbar.Item.a [ Navbar.Item.Props [ Href projectGithubLink ] ] ^>>& Version.app
+            ]
+            Navbar.End.div [ ] [
+                navItem (fun _ -> dispatch ToggleDropzone) ^>>& "Show dropzone"
+                navItem (fun _ -> dispatch ClearPreviews) ^>>& "Clear Previews"
+                navItem scrollToBottom [ p ^>& "Go to Bottom"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronDown ] [ ] ]
+                navItem scrollToTop [ p ^>& "Go to Top"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronUp ] [ ] ]
+            ]
         ]
     ]
 
@@ -352,7 +368,7 @@ let showDropzone model dispatch =
 
 let view (model : Model) (dispatch : Msg -> unit) =
     div [ ] [
-        navbar dispatch
+        navbar model.MenuActive dispatch
 
         showAllImages model
 
