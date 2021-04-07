@@ -1,3 +1,6 @@
+### 0.6.0 - 2021-04-08
+* Add **clear** command to clear previews from cli
+
 ### 0.5.0 - 2021-04-07
 * Add **--nomax** as an easy way to disable image max width and height
 * Add **--justfile** to avoid processing and previewing files
