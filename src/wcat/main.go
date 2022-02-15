@@ -20,6 +20,7 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/nfnt/resize"
+	"golang.org/x/image/webp"
 
 	"github.com/logrusorgru/aurora"
 	"github.com/urfave/cli/v2"
@@ -34,6 +35,8 @@ func readImage(f io.Reader, contentType *mimetype.MIME) (image.Image, error) {
 		return jpeg.Decode(f)
 	} else if contentType.Is("image/png") {
 		return png.Decode(f)
+	} else if contentType.Is("image/webp") {
+		return webp.Decode(f)
 	} else {
 		return nil, errors.New(fmt.Sprint("Resizing not supported for ", contentType.String()))
 	}
