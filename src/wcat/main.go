@@ -27,7 +27,7 @@ import (
 )
 
 func isResizeImage(contentType *mimetype.MIME) bool {
-	return contentType.Is("image/jpeg") || contentType.Is("image/png")
+	return contentType.Is("image/jpeg") || contentType.Is("image/png") || contentType.Is("image/webp")
 }
 
 func readImage(f io.Reader, contentType *mimetype.MIME) (image.Image, error) {
