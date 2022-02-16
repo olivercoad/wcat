@@ -1,3 +1,6 @@
+### 0.7.0 - 2020-02-16
+* Support resizing webp images
+
 ### 0.6.0 - 2021-04-08
 * Add **clear** command to clear previews from cli
 
