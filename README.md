@@ -113,7 +113,7 @@ docker build -t wcat .
 
 You will find more documentation about the used F# components at the following places:
 
-* [Saturn](https://saturnframework.org/docs/)
+* [Saturn](https://saturnframework.org/explanations/overview.html)
 * [Fable](https://fable.io/docs/)
 * [Elmish](https://elmish.github.io/elmish/)
 * [Fulma](https://fulma.github.io/Fulma/)
