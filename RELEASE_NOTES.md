@@ -1,3 +1,6 @@
+### 0.7.2 - 2022-05-15
+* Fix bug in cli with having too many open files
+
 ### 0.7.1 - 2020-02-16
 * Fix bug not allowing resize of webp images
 
