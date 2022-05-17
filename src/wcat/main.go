@@ -425,9 +425,11 @@ func main() {
 							fmt.Println(aurora.Red(err))
 						}
 					} else {
-						defer f.Close()
-						fmt.Print("Preview file ", filename, " ... ")
-						PreviewFile(client, wcatserver, filename, f, maxwidth, maxheight, justfile)
+						func() { // defer closing to just end of each loop, not end of outer action function.
+							defer f.Close()
+							fmt.Print("Preview file ", filename, " ... ")
+							PreviewFile(client, wcatserver, filename, f, maxwidth, maxheight, justfile)
+						}()
 					}
 				}
 			} else {
