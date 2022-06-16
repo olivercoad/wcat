@@ -1,3 +1,6 @@
+### 0.8.0 - 2-22-06-17
+* Add option to show images in grid using flex wrap-reverse
+
 ### 0.7.2 - 2022-05-15
 * Fix bug in cli with having too many open files
 
