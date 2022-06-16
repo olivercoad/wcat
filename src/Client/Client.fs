@@ -65,6 +65,7 @@ type Model = {
     Previews: Map<System.Guid, Preview>
     ShowDropzone: bool
     MenuActive: bool
+    UseGrid: bool
 }
 
 // The Msg type defines what events/actions can occur while the application is running
@@ -76,6 +77,7 @@ type Msg =
     | ClearPreviews
     | ToggleDropzone
     | ToggleMenu
+    | UseGrid of bool
 
 let timer initial = // used to update "2 minutes ago" momentjs message
     let sub dispatch =
@@ -86,7 +88,7 @@ let timer initial = // used to update "2 minutes ago" momentjs message
 
 // defines the initial state and initial command (= side-effect) of the application
 let init () : Model * Cmd<Msg> =
-    { Previews = Map.empty; CurrentTime = System.DateTime.Now; ShowDropzone = false; MenuActive = false }, Cmd.none
+    { Previews = Map.empty; CurrentTime = System.DateTime.Now; ShowDropzone = false; MenuActive = false; UseGrid = false }, Cmd.none
 
 let addPreview model preview currentTime =
     let previews =
@@ -94,8 +96,8 @@ let addPreview model preview currentTime =
         //if client disconnects and reconnects with server, it's possible to get messages repeated.
         | LoadingPreviewContent, true -> model.Previews //never replace already loaded preview with loading preview
         | _ -> model.Previews.Add(preview.Id, preview)
-    let maxCount = 100
-    let cutBy = 10
+    let maxCount = if model.UseGrid then 500 else 100
+    let cutBy = 12 // has factors 2,3,4 which is good for reducing shifting with grid
     let truncated =
         if previews.Count <= maxCount
         then
@@ -126,6 +128,8 @@ let update (msg : Msg) (currentModel : Model) : Model * Cmd<Msg> =
         { currentModel with ShowDropzone = not currentModel.ShowDropzone }, Cmd.none
     | ToggleMenu ->
         { currentModel with MenuActive = not currentModel.MenuActive }, Cmd.none
+    | UseGrid useGrid ->
+        { currentModel with UseGrid = useGrid }, Cmd.none
 
 /// Creates a pre with class box
 let preBox options children = pre (upcast ClassName "box"::options) children
@@ -236,22 +240,108 @@ let showPreview currentTime preview =
             hr [ ]
         ]
 
+let showPreviewGridItem preview =
+    let fileName = Option.defaultValue "" preview.Filename
+    div [ Title (sprintf "%s" fileName) ]
+        [
+            match preview.Content with
+            | ImageSrc src ->
+                div ^> img [ Src src; Style [ Display DisplayOptions.Block ] ]
+
+            | PlainText content ->
+                preBox ^>& (withLineBreaks content)
+
+            | Markdown content ->
+                Box.box' ^> Content.content ^> div [ DangerouslySetInnerHTML { __html = (markdownit.render content) } ] [ ]
+
+            | AudioSrc src ->
+                audio [ Src src; Controls true; ] [ p ^>& (Option.defaultValue "Audio" preview.Filename) ]
+
+            | IframeSrc src ->
+                iframe [ Src src ] [ ]
+                openInNewTabBtn src preview.Filename "Open in new tab"
+
+            | ContentTypeNotImplemented (fileExtension, contentType, content) ->
+                Message.message [ Message.Color IsDanger ]
+                    [
+                        let ext =
+                            match fileExtension with
+                            | Some fext -> sprintf " (%s)" fext
+                            | None -> ""
+                        Message.header ^>& "Content type not supported for preview"
+                        Message.body [ ] [
+                            p ^> b ^>& contentType + ext
+                            p [ ] [
+                                a [ Href (sprintf "%s/issues" projectGithubLink ) ] [ str "Open an issue" ]
+                                str " on github if you would like this content type to be supported"
+                            ]
+                            p [ ] [
+                                str "Use "
+                                code [ ] [ str "--justfile" ]
+                                str " if you don't want a preview"
+                            ]
+                        ]
+                    ]
+                downloadButton preview.Filename content
+
+            | JustFile content ->
+                div [] [
+                    div [ ] [ p [ ] [ str "Just the file (no preview)"] ]
+                    downloadButton preview.Filename content
+                ]
+
+            | LoadingPreviewContent ->
+                Icon.icon ^> Fa.i [ Fa.Solid.Spinner; Fa.Spin ] [ ]
+
+            | RequestBodyTooLarge ->
+                Message.message [ Message.Color IsDanger ]
+                    [
+                        Message.header ^>& "The file is too large to preview"
+                        Message.body [ ] [
+                            p ^>& sprintf "The maximum file size for preview is %s MB" ((MaxBodySize/1000_000)?toLocaleString())
+                        ]
+                    ]
+        ]
+
 let showAllImages model =
     if model.Previews.IsEmpty
     then
         div [ Hidden true ] [ ]
     else
-        let previews =
-            model.Previews
-            |> Map.toList
-            |> List.unzip
-            |> snd
-            |> List.sortByDescending (fun p -> p.Time)
-            |> List.map (showPreview model.CurrentTime)
+        if model.UseGrid then
+            let previews =
+                model.Previews
+                |> Map.toList
+                |> List.unzip
+                |> snd
+                |> List.sortBy (fun p -> p.Time)
+                |> List.map showPreviewGridItem
 
-        Column.column
-            [ Column.Width (Screen.All, Column.IsFull) ]
-            previews
+            Column.column
+                [
+                    Column.Width (Screen.All, Column.IsFull)
+                    Column.Props [
+                        Style [
+                            Display DisplayOptions.Flex
+                            FlexWrap "wrap-reverse"
+                        ]
+                    ]
+                ]
+                previews
+        else
+            let previews =
+                model.Previews
+                |> Map.toList
+                |> List.unzip
+                |> snd
+                |> List.sortByDescending (fun p -> p.Time)
+                |> List.map (showPreview model.CurrentTime)
+
+            Column.column
+                [ Column.Width (Screen.All, Column.IsFull) ]
+                previews
+
+
 
 let helpMessage =
     Message.message [ Message.Color IsInfo ] [
@@ -283,7 +373,7 @@ let downloadButtons =
 
     Button.list [ Button.List.IsCentered; Button.List.AreMedium; Button.List.Modifiers [  ] ] buttons
 
-let navbar menuActive dispatch =
+let navbar menuActive useGrid dispatch =
     let navItem onclick children =
         Navbar.Item.a
             [ Navbar.Item.Props [ OnClick onclick ] ]
@@ -309,6 +399,7 @@ let navbar menuActive dispatch =
                 Navbar.Item.a [ Navbar.Item.Props [ Href projectGithubLink ] ] ^>>& Version.app
             ]
             Navbar.End.div [ ] [
+                navItem (fun _ -> dispatch (UseGrid (not useGrid))) ^>>& if useGrid then "Use List" else "Use Grid"
                 navItem (fun _ -> dispatch ToggleDropzone) ^>>& "Show dropzone"
                 navItem (fun _ -> dispatch ClearPreviews) ^>>& "Clear Previews"
                 navItem scrollToBottom [ p ^>& "Go to Bottom"; Icon.icon ^> Fa.i [ Fa.Solid.ChevronDown ] [ ] ]
@@ -368,7 +459,7 @@ let showDropzone model dispatch =
 
 let view (model : Model) (dispatch : Msg -> unit) =
     div [ ] [
-        navbar model.MenuActive dispatch
+        navbar model.MenuActive model.UseGrid dispatch
 
         showAllImages model
 
